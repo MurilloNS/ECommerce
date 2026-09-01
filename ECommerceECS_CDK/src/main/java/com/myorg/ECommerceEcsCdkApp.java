@@ -22,7 +22,12 @@ public class ECommerceEcsCdkApp {
         infraTags.put("environment", "dev");
         infraTags.put("cost", "ECommerceInfra");
 
-        EcrStack ecrStack = new EcrStack(app, "Ecr", StackProps.builder()
+        new EcrStack(app, "Ecr", StackProps.builder()
+                .env(environment)
+                .tags(infraTags)
+                .build());
+
+        new VpcStack(app, "Vpc", StackProps.builder()
                 .env(environment)
                 .tags(infraTags)
                 .build());
