@@ -36,8 +36,13 @@ public class ECommerceEcsCdkApp {
                 .env(environment)
                 .tags(infraTags)
                 .build(), new ClusterStackProps(vpcStack.getVpc()));
-
         clusterStack.getNode().addDependency(vpcStack);
+
+        NlbStack nlbStack = new NlbStack(app, "Nlb", StackProps.builder()
+                .env(environment)
+                .tags(infraTags)
+                .build(), new NlbStackProps(vpcStack.getVpc()));
+        nlbStack.getNode().addDependency(vpcStack);
 
         app.synth();
     }
