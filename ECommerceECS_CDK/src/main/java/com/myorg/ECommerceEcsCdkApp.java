@@ -3,6 +3,7 @@ package com.myorg;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.StackProps;
+import com.myorg.ProductsServiceStack.ProductsServiceProps;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,7 +23,7 @@ public class ECommerceEcsCdkApp {
         infraTags.put("environment", "dev");
         infraTags.put("cost", "ECommerceInfra");
 
-        new EcrStack(app, "Ecr", StackProps.builder()
+        EcrStack ecrStack = new EcrStack(app, "Ecr", StackProps.builder()
                 .env(environment)
                 .tags(infraTags)
                 .build());
@@ -43,6 +44,28 @@ public class ECommerceEcsCdkApp {
                 .tags(infraTags)
                 .build(), new NlbStackProps(vpcStack.getVpc()));
         nlbStack.getNode().addDependency(vpcStack);
+
+        Map<String, String> productsServiceTags = new HashMap<>();
+        infraTags.put("team", "olirrum");
+        infraTags.put("project", "ECommerce");
+        infraTags.put("environment", "dev");
+        infraTags.put("cost", "ProductsService");
+
+        ProductsServiceStack productsServiceStack = new ProductsServiceStack(app, "ProductsService",
+                StackProps.builder()
+                        .env(environment)
+                        .tags(productsServiceTags)
+                        .build(),
+                new ProductsServiceProps(
+                        vpcStack.getVpc(),
+                        clusterStack.getCluster(),
+                        nlbStack.getNetworkLoadBalancer(),
+                        nlbStack.getApplicationLoadBalancer(),
+                        ecrStack.getProductsServiceRepository()));
+        productsServiceStack.getNode().addDependency(vpcStack);
+        productsServiceStack.getNode().addDependency(clusterStack);
+        productsServiceStack.getNode().addDependency(nlbStack);
+        productsServiceStack.getNode().addDependency(ecrStack);
 
         app.synth();
     }
