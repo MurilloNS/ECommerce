@@ -45,10 +45,10 @@ public class ECommerceEcsCdkApp {
         nlbStack.getNode().addDependency(vpcStack);
 
         Map<String, String> productsServiceTags = new HashMap<>();
-        infraTags.put("team", "olirrum");
-        infraTags.put("project", "ECommerce");
-        infraTags.put("environment", "dev");
-        infraTags.put("cost", "ProductsService");
+        productsServiceTags.put("team", "olirrum");
+        productsServiceTags.put("project", "ECommerce");
+        productsServiceTags.put("environment", "dev");
+        productsServiceTags.put("cost", "ProductsService");
 
         ProductsServiceStack productsServiceStack = new ProductsServiceStack(app, "ProductsService",
                 StackProps.builder()
