@@ -56,7 +56,7 @@ public class ProductsServiceStack extends Stack {
                         .environment(Map.of("SERVER_PORT", String.valueOf(SERVER_PORT)))
                         .build());
 
-        ApplicationListener applicationListener = productsServiceProps.applicationLoadBalancer
+        ApplicationListener applicationListener = productsServiceProps.applicationLoadBalancer()
                 .addListener("ProductsServiceAlbListener", ApplicationListenerProps.builder()
                         .port(SERVER_PORT)
                         .protocol(ApplicationProtocol.HTTP)
@@ -90,7 +90,7 @@ public class ProductsServiceStack extends Stack {
                                 .build())
                         .build());
 
-        NetworkListener networkListener = productsServiceProps.networkLoadBalancer
+        NetworkListener networkListener = productsServiceProps.networkLoadBalancer()
                 .addListener("ProductsServiceNlbListener", BaseNetworkListenerProps.builder()
                         .port(SERVER_PORT)
                         .protocol(software.amazon.awscdk.services.elasticloadbalancingv2.Protocol.TCP)
