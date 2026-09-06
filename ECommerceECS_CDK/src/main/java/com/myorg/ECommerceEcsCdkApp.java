@@ -66,6 +66,15 @@ public class ECommerceEcsCdkApp {
         productsServiceStack.getNode().addDependency(nlbStack);
         productsServiceStack.getNode().addDependency(ecrStack);
 
+        ApiStack apiStack = new ApiStack(app, "Api", StackProps.builder()
+                .env(environment)
+                .tags(infraTags)
+                .build(),
+                new ApiStackProps(
+                        nlbStack.getNetworkLoadBalancer(),
+                        nlbStack.getVpcLink()));
+        apiStack.getNode().addDependency(nlbStack);
+
         app.synth();
     }
 }
