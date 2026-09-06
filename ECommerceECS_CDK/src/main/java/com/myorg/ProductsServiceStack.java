@@ -4,6 +4,7 @@ import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.services.dynamodb.*;
 import software.amazon.awscdk.services.ec2.Peer;
 import software.amazon.awscdk.services.ec2.Port;
 import software.amazon.awscdk.services.ec2.Vpc;
@@ -28,12 +29,25 @@ public class ProductsServiceStack extends Stack {
                                 ProductsServiceProps productsServiceProps) {
         super(scope, id, props);
 
+        Table productDdb = new Table(this, "ProductsDdb", TableProps.builder()
+                .partitionKey(Attribute.builder()
+                        .name("id")
+                        .type(AttributeType.STRING)
+                        .build())
+                .tableName("products")
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .billingMode(BillingMode.PROVISIONED)
+                .readCapacity(1)
+                .writeCapacity(1)
+                .build());
+
         FargateTaskDefinition fargateTaskDefinition = new FargateTaskDefinition(this, "TaskDefinition",
                 FargateTaskDefinitionProps.builder()
                         .family("products-service")
                         .cpu(512)
                         .memoryLimitMiB(1024)
                         .build());
+        productDdb.grantReadWriteData(fargateTaskDefinition.getTaskRole());
 
         AwsLogDriver logDriver = new AwsLogDriver(AwsLogDriverProps.builder()
                 .logGroup(new LogGroup(this, "LogGroup", LogGroupProps.builder()
@@ -53,7 +67,10 @@ public class ProductsServiceStack extends Stack {
                                 .containerPort(SERVER_PORT)
                                 .protocol(Protocol.TCP)
                                 .build()))
-                        .environment(Map.of("SERVER_PORT", String.valueOf(SERVER_PORT)))
+                        .environment(Map.of(
+                                "SERVER_PORT", String.valueOf(SERVER_PORT),
+                                "AWS_PRODUCTSDDB_NAME", productDdb.getTableName(),
+                                "AWS_REGION", this.getRegion()))
                         .build());
 
         ApplicationListener applicationListener = productsServiceProps.applicationLoadBalancer()
