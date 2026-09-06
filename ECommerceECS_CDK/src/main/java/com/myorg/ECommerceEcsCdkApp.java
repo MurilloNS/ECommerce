@@ -3,7 +3,6 @@ package com.myorg;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.StackProps;
-import com.myorg.ProductsServiceStack.ProductsServiceProps;
 
 import java.util.HashMap;
 import java.util.Map;

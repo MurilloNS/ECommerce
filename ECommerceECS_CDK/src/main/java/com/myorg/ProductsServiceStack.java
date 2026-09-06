@@ -50,8 +50,8 @@ public class ProductsServiceStack extends Stack {
                         .containerName("productsService")
                         .logging(logDriver)
                         .portMappings(List.of(PortMapping.builder()
-                                        .containerPort(SERVER_PORT)
-                                        .protocol(Protocol.TCP)
+                                .containerPort(SERVER_PORT)
+                                .protocol(Protocol.TCP)
                                 .build()))
                         .environment(Map.of("SERVER_PORT", String.valueOf(SERVER_PORT)))
                         .build());
@@ -107,7 +107,7 @@ public class ProductsServiceStack extends Stack {
                         .build())))
                 .build());
     }
-
-    record ProductsServiceProps(Vpc vpc, Cluster cluster, NetworkLoadBalancer networkLoadBalancer,
-                                ApplicationLoadBalancer applicationLoadBalancer, Repository repository) {}
 }
+
+record ProductsServiceProps(Vpc vpc, Cluster cluster, NetworkLoadBalancer networkLoadBalancer,
+                            ApplicationLoadBalancer applicationLoadBalancer, Repository repository) {}
