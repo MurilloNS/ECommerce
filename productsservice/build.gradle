@@ -24,6 +24,9 @@ dependencies {
 	implementation("software.amazon.awssdk:dynamodb")
 	implementation("software.amazon.awssdk:dynamodb-enhanced")
 
+	implementation("com.amazonaws:aws-xray-recorder-sdk-spring:2.14.0")
+	implementation("com.amazonaws:aws-xray-recorder-sdk-aws-sdk-v2:2.14.0")
+
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 

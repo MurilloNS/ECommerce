@@ -13,6 +13,7 @@ import software.amazon.awscdk.services.ecs.*;
 import software.amazon.awscdk.services.ecs.Protocol;
 import software.amazon.awscdk.services.elasticloadbalancingv2.*;
 import software.amazon.awscdk.services.elasticloadbalancingv2.HealthCheck;
+import software.amazon.awscdk.services.iam.ManagedPolicy;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
@@ -70,8 +71,31 @@ public class ProductsServiceStack extends Stack {
                         .environment(Map.of(
                                 "SERVER_PORT", String.valueOf(SERVER_PORT),
                                 "AWS_PRODUCTSDDB_NAME", productDdb.getTableName(),
-                                "AWS_REGION", this.getRegion()))
+                                "AWS_REGION", this.getRegion(),
+                                "AWS_XRAY_DAEMON_ADDRESS", "0.0.0.0:2000",
+                                "AWS_XRAY_CONTEXT_MISSING", "IGNORE_ERROR",
+                                "AWS_XRAY_TRACING_NAME", "productsservice"))
                         .build());
+
+        fargateTaskDefinition.addContainer("xray", ContainerDefinitionOptions.builder()
+                .image(ContainerImage.fromRegistry("public.ecr.aws/xray/aws-xray-daemon:latest"))
+                .containerName("XRayProductsService")
+                .logging(new AwsLogDriver(AwsLogDriverProps.builder()
+                        .logGroup(new LogGroup(this, "XRayLogGroup", LogGroupProps.builder()
+                                .logGroupName("XRayProductsService")
+                                .removalPolicy(RemovalPolicy.DESTROY)
+                                .retention(RetentionDays.ONE_MONTH)
+                                .build()))
+                        .streamPrefix("XRayProductsService")
+                        .build()))
+                        .portMappings(List.of(PortMapping.builder()
+                                .containerPort(2000)
+                                .protocol(Protocol.UDP)
+                                .build()))
+                        .cpu(128)
+                        .memoryLimitMiB(128)
+                .build());
+        fargateTaskDefinition.getTaskRole().addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName("AWSXrayWriteOnlyAccess"));
 
         ApplicationListener applicationListener = productsServiceProps.applicationLoadBalancer()
                 .addListener("ProductsServiceAlbListener", ApplicationListenerProps.builder()

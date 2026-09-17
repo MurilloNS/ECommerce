@@ -3,6 +3,7 @@ package br.com.murillo.productsservice.products.controllers;
 import br.com.murillo.productsservice.products.dtos.ProductDTO;
 import br.com.murillo.productsservice.products.models.Product;
 import br.com.murillo.productsservice.products.repositories.ProductRepository;
+import com.amazonaws.xray.spring.aop.XRayEnabled;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletionException;
 
+@XRayEnabled
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
