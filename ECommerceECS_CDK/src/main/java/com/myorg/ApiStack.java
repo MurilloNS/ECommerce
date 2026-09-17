@@ -1,121 +1,155 @@
 package com.myorg;
 
+import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
-import software.amazon.awscdk.services.apigateway.ConnectionType;
-import software.amazon.awscdk.services.apigateway.Integration;
-import software.amazon.awscdk.services.apigateway.IntegrationOptions;
-import software.amazon.awscdk.services.apigateway.IntegrationProps;
-import software.amazon.awscdk.services.apigateway.IntegrationType;
-import software.amazon.awscdk.services.apigateway.MethodOptions;
-import software.amazon.awscdk.services.apigateway.Resource;
-import software.amazon.awscdk.services.apigateway.RestApi;
-import software.amazon.awscdk.services.apigateway.RestApiProps;
-import software.amazon.awscdk.services.apigateway.VpcLink;
+import software.amazon.awscdk.services.apigateway.*;
 import software.amazon.awscdk.services.elasticloadbalancingv2.NetworkLoadBalancer;
+import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awscdk.services.logs.LogGroupProps;
+import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class ApiStack extends Stack {
-    private static final String PRODUCTS_PATH = "/api/products";
-    private static final String PRODUCTS_RESOURCE = "products";
-    private static final String ID_PATH = "{id}";
-
-    public ApiStack(final Construct scope, final String id, final StackProps props, final ApiStackProps apiStackProps) {
+    public ApiStack(final Construct scope, final String id,
+                    final StackProps props, ApiStackProps apiStackProps) {
         super(scope, id, props);
+
+        LogGroup logGroup = new LogGroup(this, "ECommerceApiLogs", LogGroupProps.builder()
+                .logGroupName("ECommerceAPI")
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .retention(RetentionDays.ONE_MONTH)
+                .build());
 
         final RestApi restApi = new RestApi(this, "RestApi", RestApiProps.builder()
                 .restApiName("ECommerceAPI")
+                .cloudWatchRole(true)
+                .deployOptions(StageOptions.builder()
+                        .loggingLevel(MethodLoggingLevel.INFO)
+                        .accessLogDestination(new LogGroupLogDestination(logGroup))
+                        .accessLogFormat(AccessLogFormat.jsonWithStandardFields(JsonWithStandardFieldProps.builder()
+                                .caller(true)
+                                .httpMethod(true)
+                                .ip(true)
+                                .protocol(true)
+                                .requestTime(true)
+                                .resourcePath(true)
+                                .responseLength(true)
+                                .status(true)
+                                .user(true)
+                                .build()))
+                        .build())
                 .build());
 
-        createProductsResource(restApi, apiStackProps);
+        this.createProductsResource(restApi, apiStackProps);
     }
 
-    private void createProductsResource(
-            final RestApi restApi,
-            final ApiStackProps apiStackProps) {
+    private void createProductsResource(RestApi restApi, ApiStackProps apiStackProps) {
+        Map<String, String> productsIntegrationParameters = new HashMap<>();
+        productsIntegrationParameters.put("integration.request.header.requestId", "context.requestId");
 
-        final Resource productsResource = restApi.getRoot().addResource(PRODUCTS_RESOURCE);
+        Map<String, Boolean> productsMethodParameters = new HashMap<>();
+        productsMethodParameters.put("method.request.header.requestId", false);
+
+        // /products
+        Resource productsResource = restApi.getRoot().addResource("products");
 
         // GET /products
-        productsResource.addMethod("GET", createProductsIntegration(apiStackProps, "GET"));
+        productsResource.addMethod("GET", new Integration(
+                IntegrationProps.builder()
+                        .type(IntegrationType.HTTP_PROXY)
+                        .integrationHttpMethod("GET")
+                        .uri("http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() +
+                                ":8080/api/products")
+                        .options(IntegrationOptions.builder()
+                                .vpcLink(apiStackProps.vpcLink())
+                                .connectionType(ConnectionType.VPC_LINK)
+                                .requestParameters(productsIntegrationParameters)
+                                .build())
+                        .build()), MethodOptions.builder()
+                        .requestParameters(productsMethodParameters)
+                .build());
 
         // POST /products
-        productsResource.addMethod("POST", createProductsIntegration(apiStackProps, "POST"));
-
-        final Resource productIdResource = productsResource.addResource(ID_PATH);
-
-        final Map<String, String> integrationParameters = Map.of(
-                "integration.request.path.id",
-                "method.request.path.id");
-
-        final Map<String, Boolean> methodParameters = Map.of(
-                "method.request.path.id",
-                true);
-
-        // GET /products/{id}
-        productIdResource.addMethod("GET",
-                createProductByIdIntegration(apiStackProps, "GET", integrationParameters),
-                createMethodOptions(methodParameters));
+        productsResource.addMethod("POST", new Integration(
+                IntegrationProps.builder()
+                        .type(IntegrationType.HTTP_PROXY)
+                        .integrationHttpMethod("POST")
+                        .uri("http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() +
+                                ":8080/api/products")
+                        .options(IntegrationOptions.builder()
+                                .vpcLink(apiStackProps.vpcLink())
+                                .connectionType(ConnectionType.VPC_LINK)
+                                .requestParameters(productsIntegrationParameters)
+                                .build())
+                        .build()), MethodOptions.builder()
+                .requestParameters(productsMethodParameters)
+                .build());
 
         // PUT /products/{id}
-        productIdResource.addMethod("PUT",
-                createProductByIdIntegration(apiStackProps, "PUT", integrationParameters),
-                createMethodOptions(methodParameters));
+        Map<String, String> productIdIntegrationParameters = new HashMap<>();
+        productIdIntegrationParameters.put("integration.request.path.id", "method.request.path.id");
+        productIdIntegrationParameters.put("integration.request.header.requestId", "context.requestId");
+
+        Map<String, Boolean> productIdMethodParameters = new HashMap<>();
+        productIdMethodParameters.put("method.request.path.id", true);
+        productIdMethodParameters.put("method.request.header.requestId", false);
+
+        Resource productIdResource = productsResource.addResource("{id}");
+        productIdResource.addMethod("PUT", new Integration(
+                IntegrationProps.builder()
+                        .type(IntegrationType.HTTP_PROXY)
+                        .integrationHttpMethod("PUT")
+                        .uri("http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() +
+                                ":8080/api/products/{id}")
+                        .options(IntegrationOptions.builder()
+                                .vpcLink(apiStackProps.vpcLink())
+                                .connectionType(ConnectionType.VPC_LINK)
+                                .requestParameters(productIdIntegrationParameters)
+                                .build())
+                        .build()), MethodOptions.builder()
+                .requestParameters(productIdMethodParameters)
+                .build());
+
+        // GET /products/{id}
+        productIdResource.addMethod("GET", new Integration(
+                IntegrationProps.builder()
+                        .type(IntegrationType.HTTP_PROXY)
+                        .integrationHttpMethod("GET")
+                        .uri("http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() +
+                                ":8080/api/products/{id}")
+                        .options(IntegrationOptions.builder()
+                                .vpcLink(apiStackProps.vpcLink())
+                                .connectionType(ConnectionType.VPC_LINK)
+                                .requestParameters(productIdIntegrationParameters)
+                                .build())
+                        .build()), MethodOptions.builder()
+                .requestParameters(productIdMethodParameters)
+                .build());
 
         // DELETE /products/{id}
-        productIdResource.addMethod("DELETE",
-                createProductByIdIntegration(apiStackProps, "DELETE", integrationParameters),
-                createMethodOptions(methodParameters));
-    }
-
-    private Integration createProductsIntegration(final ApiStackProps apiStackProps, final String httpMethod) {
-        return new Integration(IntegrationProps.builder()
-                .type(IntegrationType.HTTP_PROXY)
-                .integrationHttpMethod(httpMethod)
-                .uri(buildProductsUri(apiStackProps))
-                .options(createIntegrationOptions(apiStackProps))
+        productIdResource.addMethod("DELETE", new Integration(
+                IntegrationProps.builder()
+                        .type(IntegrationType.HTTP_PROXY)
+                        .integrationHttpMethod("DELETE")
+                        .uri("http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() +
+                                ":8080/api/products/{id}")
+                        .options(IntegrationOptions.builder()
+                                .vpcLink(apiStackProps.vpcLink())
+                                .connectionType(ConnectionType.VPC_LINK)
+                                .requestParameters(productIdIntegrationParameters)
+                                .build())
+                        .build()), MethodOptions.builder()
+                .requestParameters(productIdMethodParameters)
                 .build());
-    }
 
-    private Integration createProductByIdIntegration(final ApiStackProps apiStackProps, final String httpMethod,
-                                                     final Map<String, String> requestParameters) {
-        return new Integration(IntegrationProps.builder()
-                .type(IntegrationType.HTTP_PROXY)
-                .integrationHttpMethod(httpMethod)
-                .uri(buildProductByIdUri(apiStackProps))
-                .options(createIntegrationOptions(apiStackProps, requestParameters))
-                .build());
-    }
-
-    private IntegrationOptions createIntegrationOptions(final ApiStackProps apiStackProps) {
-        return IntegrationOptions.builder()
-                .vpcLink(apiStackProps.vpcLink())
-                .connectionType(ConnectionType.VPC_LINK)
-                .build();
-    }
-
-    private IntegrationOptions createIntegrationOptions(final ApiStackProps apiStackProps,
-                                                        final Map<String, String> requestParameters) {
-        return IntegrationOptions.builder()
-                .vpcLink(apiStackProps.vpcLink())
-                .connectionType(ConnectionType.VPC_LINK)
-                .requestParameters(requestParameters)
-                .build();
-    }
-
-    private MethodOptions createMethodOptions(final Map<String, Boolean> requestParameters) {
-        return MethodOptions.builder().requestParameters(requestParameters).build();
-    }
-
-    private String buildProductsUri(final ApiStackProps apiStackProps) {
-        return "http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() + ":8080" + PRODUCTS_PATH;
-    }
-
-    private String buildProductByIdUri(final ApiStackProps apiStackProps) {
-        return buildProductsUri(apiStackProps) + "/{id}";
     }
 }
 
-record ApiStackProps(NetworkLoadBalancer networkLoadBalancer, VpcLink vpcLink) {}
+record ApiStackProps(
+        NetworkLoadBalancer networkLoadBalancer,
+        VpcLink vpcLink
+){}

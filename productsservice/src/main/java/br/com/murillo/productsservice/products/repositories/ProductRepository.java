@@ -1,7 +1,10 @@
 package br.com.murillo.productsservice.products.repositories;
 
+import br.com.murillo.productsservice.products.controllers.ProductController;
 import br.com.murillo.productsservice.products.models.Product;
 import com.amazonaws.xray.spring.aop.XRayEnabled;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
@@ -14,8 +17,9 @@ import java.util.concurrent.CompletableFuture;
 @Repository
 @XRayEnabled
 public class ProductRepository {
+    private static final Logger LOG = LogManager.getLogger(ProductRepository.class);
     private final DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient;
-    private DynamoDbAsyncTable<Product> productsTable;
+    private final DynamoDbAsyncTable<Product> productsTable;
 
     @Autowired
     public ProductRepository(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
@@ -29,6 +33,7 @@ public class ProductRepository {
     }
 
     public CompletableFuture<Product> getById(String productId) {
+        LOG.info("ProductId: {}", productId);
         return productsTable.getItem(Key.builder()
                 .partitionValue(productId)
                 .build());

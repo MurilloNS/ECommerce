@@ -61,7 +61,7 @@ public class ProductsServiceStack extends Stack {
 
         fargateTaskDefinition.addContainer("ProductsServiceContainer",
                 ContainerDefinitionOptions.builder()
-                        .image(ContainerImage.fromEcrRepository(productsServiceProps.repository(), "1.0.0"))
+                        .image(ContainerImage.fromEcrRepository(productsServiceProps.repository(), "1.4.0"))
                         .containerName("productsService")
                         .logging(logDriver)
                         .portMappings(List.of(PortMapping.builder()
@@ -74,7 +74,8 @@ public class ProductsServiceStack extends Stack {
                                 "AWS_REGION", this.getRegion(),
                                 "AWS_XRAY_DAEMON_ADDRESS", "0.0.0.0:2000",
                                 "AWS_XRAY_CONTEXT_MISSING", "IGNORE_ERROR",
-                                "AWS_XRAY_TRACING_NAME", "productsservice"))
+                                "AWS_XRAY_TRACING_NAME", "productsservice",
+                                "LOGGING_LEVEL_ROOT", "INFO"))
                         .build());
 
         fargateTaskDefinition.addContainer("xray", ContainerDefinitionOptions.builder()
