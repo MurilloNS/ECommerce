@@ -14,12 +14,12 @@ public class EcrStack extends Stack {
     public EcrStack(final Construct scope, final String id, final StackProps props) {
         super(scope, id, props);
 
-        productsServiceRepository = new Repository(this, "ProductsService",
+        this.productsServiceRepository = new Repository(this, "ProductsService",
                 RepositoryProps.builder()
                         .repositoryName("productsservice")
                         .removalPolicy(RemovalPolicy.DESTROY)
                         .imageTagMutability(TagMutability.IMMUTABLE)
-                        .emptyOnDelete(true)
+                        .autoDeleteImages(true)
                         .build());
     }
 

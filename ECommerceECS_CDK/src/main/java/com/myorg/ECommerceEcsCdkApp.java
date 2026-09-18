@@ -36,13 +36,13 @@ public class ECommerceEcsCdkApp {
                 .env(environment)
                 .tags(infraTags)
                 .build(), new ClusterStackProps(vpcStack.getVpc()));
-        clusterStack.getNode().addDependency(vpcStack);
+        clusterStack.addDependency(vpcStack);
 
         NlbStack nlbStack = new NlbStack(app, "Nlb", StackProps.builder()
                 .env(environment)
                 .tags(infraTags)
                 .build(), new NlbStackProps(vpcStack.getVpc()));
-        nlbStack.getNode().addDependency(vpcStack);
+        nlbStack.addDependency(vpcStack);
 
         Map<String, String> productsServiceTags = new HashMap<>();
         productsServiceTags.put("team", "olirrum");
@@ -61,10 +61,10 @@ public class ECommerceEcsCdkApp {
                         nlbStack.getNetworkLoadBalancer(),
                         nlbStack.getApplicationLoadBalancer(),
                         ecrStack.getProductsServiceRepository()));
-        productsServiceStack.getNode().addDependency(vpcStack);
-        productsServiceStack.getNode().addDependency(clusterStack);
-        productsServiceStack.getNode().addDependency(nlbStack);
-        productsServiceStack.getNode().addDependency(ecrStack);
+        productsServiceStack.addDependency(vpcStack);
+        productsServiceStack.addDependency(clusterStack);
+        productsServiceStack.addDependency(nlbStack);
+        productsServiceStack.addDependency(ecrStack);
 
         ApiStack apiStack = new ApiStack(app, "Api", StackProps.builder()
                 .env(environment)
@@ -73,7 +73,7 @@ public class ECommerceEcsCdkApp {
                 new ApiStackProps(
                         nlbStack.getNetworkLoadBalancer(),
                         nlbStack.getVpcLink()));
-        apiStack.getNode().addDependency(nlbStack);
+        apiStack.addDependency(nlbStack);
 
         app.synth();
     }

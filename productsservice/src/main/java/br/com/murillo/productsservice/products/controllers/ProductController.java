@@ -1,6 +1,8 @@
 package br.com.murillo.productsservice.products.controllers;
 
+import br.com.murillo.productsservice.exceptions.ProductException;
 import br.com.murillo.productsservice.products.dtos.ProductDTO;
+import br.com.murillo.productsservice.products.enums.ProductErrors;
 import br.com.murillo.productsservice.products.models.Product;
 import br.com.murillo.productsservice.products.repositories.ProductRepository;
 import com.amazonaws.xray.spring.aop.XRayEnabled;
@@ -41,7 +43,7 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getProductById(@PathVariable String id) {
+    public ResponseEntity<ProductDTO> getProductById(@PathVariable String id) throws ProductException {
         Product product = productRepository.getById(id).join();
 
         if (product != null) {
@@ -49,7 +51,7 @@ public class ProductController {
             return new ResponseEntity<>(new ProductDTO(product), HttpStatus.OK);
         }
         else
-            return new ResponseEntity<>("Product not found!", HttpStatus.NO_CONTENT);
+            throw new ProductException(ProductErrors.PRODUCT_NOT_FOUND, id);
     }
 
     @PostMapping
@@ -65,7 +67,7 @@ public class ProductController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteProductById(@PathVariable String id) {
+    public ResponseEntity<ProductDTO> deleteProductById(@PathVariable String id) throws ProductException {
         Product productDeleted = productRepository.deleteById(id).join();
 
         if (productDeleted != null) {
@@ -73,11 +75,11 @@ public class ProductController {
             return new ResponseEntity<>(new ProductDTO(productDeleted), HttpStatus.OK);
         }
         else
-            return new ResponseEntity<>("Product not found!", HttpStatus.NO_CONTENT);
+            throw new ProductException(ProductErrors.PRODUCT_NOT_FOUND, id);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateProduct(@PathVariable String id, @RequestBody ProductDTO productDTO) {
+    public ResponseEntity<ProductDTO> updateProduct(@PathVariable String id, @RequestBody ProductDTO productDTO) throws ProductException {
         try {
             Product productUpdated = productRepository.update(ProductDTO.toProduct(productDTO), id).join();
 
@@ -85,7 +87,7 @@ public class ProductController {
 
             return new ResponseEntity<>(new ProductDTO(productUpdated), HttpStatus.OK);
         } catch (CompletionException e) {
-            return new ResponseEntity<>("Product not found!", HttpStatus.NO_CONTENT);
+            throw new ProductException(ProductErrors.PRODUCT_NOT_FOUND, id);
         }
     }
 }

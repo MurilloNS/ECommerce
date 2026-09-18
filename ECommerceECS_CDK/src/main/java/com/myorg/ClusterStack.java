@@ -5,7 +5,6 @@ import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.ec2.Vpc;
 import software.amazon.awscdk.services.ecs.Cluster;
 import software.amazon.awscdk.services.ecs.ClusterProps;
-import software.amazon.awscdk.services.ecs.ContainerInsights;
 import software.constructs.Construct;
 
 public class ClusterStack extends Stack {
@@ -18,7 +17,7 @@ public class ClusterStack extends Stack {
         this.cluster = new Cluster(this, "Cluster", ClusterProps.builder()
                 .clusterName("ECommerce")
                 .vpc(clusterStackProps.vpc())
-                .containerInsightsV2(ContainerInsights.ENABLED)
+                .containerInsights(true)
                 .build());
     }
 
