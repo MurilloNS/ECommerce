@@ -10,6 +10,7 @@ import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -58,35 +59,78 @@ public class ApiStack extends Stack {
         Resource productsResource = restApi.getRoot().addResource("products");
 
         // GET /products
-        productsResource.addMethod("GET", new Integration(
-                IntegrationProps.builder()
-                        .type(IntegrationType.HTTP_PROXY)
-                        .integrationHttpMethod("GET")
-                        .uri("http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() +
-                                ":8080/api/products")
-                        .options(IntegrationOptions.builder()
-                                .vpcLink(apiStackProps.vpcLink())
-                                .connectionType(ConnectionType.VPC_LINK)
-                                .requestParameters(productsIntegrationParameters)
-                                .build())
-                        .build()), MethodOptions.builder()
-                        .requestParameters(productsMethodParameters)
+        productsResource.addMethod("GET", new Integration(IntegrationProps.builder()
+                .type(IntegrationType.HTTP_PROXY)
+                .integrationHttpMethod("GET")
+                .uri("http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() +
+                        ":8080/api/products")
+                .options(IntegrationOptions.builder()
+                        .vpcLink(apiStackProps.vpcLink())
+                        .connectionType(ConnectionType.VPC_LINK)
+                        .requestParameters(productsIntegrationParameters)
+                        .build())
+                .build()), MethodOptions.builder()
+                .requestParameters(productsMethodParameters)
                 .build());
 
+        RequestValidator productRequestValidator = new RequestValidator(this, "ProductRequestValidator",
+                RequestValidatorProps.builder()
+                        .restApi(restApi)
+                        .requestValidatorName("Product request validator")
+                        .validateRequestBody(true)
+                        .build());
+
+        Map<String, JsonSchema> productModelProperties = new HashMap<>();
+        productModelProperties.put("name", JsonSchema.builder()
+                .type(JsonSchemaType.STRING)
+                .minLength(5)
+                .maxLength(50)
+                .build());
+        productModelProperties.put("code", JsonSchema.builder()
+                .type(JsonSchemaType.STRING)
+                .minLength(5)
+                .maxLength(15)
+                .build());
+        productModelProperties.put("model", JsonSchema.builder()
+                .type(JsonSchemaType.STRING)
+                .minLength(5)
+                .maxLength(50)
+                .build());
+        productModelProperties.put("price", JsonSchema.builder()
+                .type(JsonSchemaType.NUMBER)
+                .minimum(10.0)
+                .maximum(1000.0)
+                .build());
+
+        Model productModel = new Model(this, "ProductModel", ModelProps.builder()
+                .modelName("ProductModel")
+                .restApi(restApi)
+                .contentType("application/json")
+                .schema(JsonSchema.builder()
+                        .type(JsonSchemaType.OBJECT)
+                        .properties(productModelProperties)
+                        .required(Arrays.asList("name", "code"))
+                        .build())
+                .build());
+
+        Map<String, Model> productRequestModels = new HashMap<>();
+        productRequestModels.put("application/json", productModel);
+
         // POST /products
-        productsResource.addMethod("POST", new Integration(
-                IntegrationProps.builder()
-                        .type(IntegrationType.HTTP_PROXY)
-                        .integrationHttpMethod("POST")
-                        .uri("http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() +
-                                ":8080/api/products")
-                        .options(IntegrationOptions.builder()
-                                .vpcLink(apiStackProps.vpcLink())
-                                .connectionType(ConnectionType.VPC_LINK)
-                                .requestParameters(productsIntegrationParameters)
-                                .build())
-                        .build()), MethodOptions.builder()
+        productsResource.addMethod("POST", new Integration(IntegrationProps.builder()
+                .type(IntegrationType.HTTP_PROXY)
+                .integrationHttpMethod("POST")
+                .uri("http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() +
+                        ":8080/api/products")
+                .options(IntegrationOptions.builder()
+                        .vpcLink(apiStackProps.vpcLink())
+                        .connectionType(ConnectionType.VPC_LINK)
+                        .requestParameters(productsIntegrationParameters)
+                        .build())
+                .build()), MethodOptions.builder()
                 .requestParameters(productsMethodParameters)
+                .requestValidator(productRequestValidator)
+                .requestModels(productRequestModels)
                 .build());
 
         // PUT /products/{id}
@@ -99,24 +143,24 @@ public class ApiStack extends Stack {
         productIdMethodParameters.put("method.request.header.requestId", false);
 
         Resource productIdResource = productsResource.addResource("{id}");
-        productIdResource.addMethod("PUT", new Integration(
-                IntegrationProps.builder()
-                        .type(IntegrationType.HTTP_PROXY)
-                        .integrationHttpMethod("PUT")
-                        .uri("http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() +
-                                ":8080/api/products/{id}")
-                        .options(IntegrationOptions.builder()
-                                .vpcLink(apiStackProps.vpcLink())
-                                .connectionType(ConnectionType.VPC_LINK)
-                                .requestParameters(productIdIntegrationParameters)
-                                .build())
-                        .build()), MethodOptions.builder()
+        productIdResource.addMethod("PUT", new Integration(IntegrationProps.builder()
+                .type(IntegrationType.HTTP_PROXY)
+                .integrationHttpMethod("PUT")
+                .uri("http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() +
+                        ":8080/api/products/{id}")
+                .options(IntegrationOptions.builder()
+                        .vpcLink(apiStackProps.vpcLink())
+                        .connectionType(ConnectionType.VPC_LINK)
+                        .requestParameters(productIdIntegrationParameters)
+                        .build())
+                .build()), MethodOptions.builder()
                 .requestParameters(productIdMethodParameters)
+                .requestValidator(productRequestValidator)
+                .requestModels(productRequestModels)
                 .build());
 
         // GET /products/{id}
-        productIdResource.addMethod("GET", new Integration(
-                IntegrationProps.builder()
+        productIdResource.addMethod("GET", new Integration(IntegrationProps.builder()
                         .type(IntegrationType.HTTP_PROXY)
                         .integrationHttpMethod("GET")
                         .uri("http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() +
@@ -131,25 +175,20 @@ public class ApiStack extends Stack {
                 .build());
 
         // DELETE /products/{id}
-        productIdResource.addMethod("DELETE", new Integration(
-                IntegrationProps.builder()
-                        .type(IntegrationType.HTTP_PROXY)
-                        .integrationHttpMethod("DELETE")
-                        .uri("http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() +
-                                ":8080/api/products/{id}")
-                        .options(IntegrationOptions.builder()
-                                .vpcLink(apiStackProps.vpcLink())
-                                .connectionType(ConnectionType.VPC_LINK)
-                                .requestParameters(productIdIntegrationParameters)
-                                .build())
-                        .build()), MethodOptions.builder()
+        productIdResource.addMethod("DELETE", new Integration(IntegrationProps.builder()
+                .type(IntegrationType.HTTP_PROXY)
+                .integrationHttpMethod("DELETE")
+                .uri("http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() +
+                        ":8080/api/products/{id}")
+                .options(IntegrationOptions.builder()
+                        .vpcLink(apiStackProps.vpcLink())
+                        .connectionType(ConnectionType.VPC_LINK)
+                        .requestParameters(productIdIntegrationParameters)
+                        .build())
+                .build()), MethodOptions.builder()
                 .requestParameters(productIdMethodParameters)
                 .build());
-
     }
 }
 
-record ApiStackProps(
-        NetworkLoadBalancer networkLoadBalancer,
-        VpcLink vpcLink
-){}
+record ApiStackProps(NetworkLoadBalancer networkLoadBalancer, VpcLink vpcLink) {}
