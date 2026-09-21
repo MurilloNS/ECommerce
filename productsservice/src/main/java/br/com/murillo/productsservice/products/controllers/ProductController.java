@@ -31,15 +31,26 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ProductDTO>> getAllProducts() {
-        LOG.info("Get all products");
+    public ResponseEntity<?> getAllProducts(@RequestParam(required = false) String code) throws ProductException {
+        if (code != null) {
+            LOG.info("Get product by code: {}", code);
 
-        List<ProductDTO> productsDTO = new ArrayList<>();
+            Product productByCode = productRepository.getByCode(code).join();
+            if (productByCode != null) {
+                return new ResponseEntity<>(new ProductDTO(productByCode), HttpStatus.OK);
+            } else {
+                throw new ProductException(ProductErrors.PRODUCT_NOT_FOUND, null);
+            }
+        } else {
+            LOG.info("Get all products");
 
-        productRepository.getAll().items().subscribe(product ->
-                productsDTO.add(new ProductDTO(product))).join();
+            List<ProductDTO> productsDTO = new ArrayList<>();
 
-        return new ResponseEntity<>(productsDTO, HttpStatus.OK);
+            productRepository.getAll().items().subscribe(product ->
+                    productsDTO.add(new ProductDTO(product))).join();
+
+            return new ResponseEntity<>(productsDTO, HttpStatus.OK);
+        }
     }
 
     @GetMapping("/{id}")
@@ -55,7 +66,7 @@ public class ProductController {
     }
 
     @PostMapping
-    public ResponseEntity<ProductDTO> createProduct(@RequestBody ProductDTO productDTO) {
+    public ResponseEntity<ProductDTO> createProduct(@RequestBody ProductDTO productDTO) throws ProductException {
         Product productCreated = ProductDTO.toProduct(productDTO);
         productCreated.setId(UUID.randomUUID().toString());
 
