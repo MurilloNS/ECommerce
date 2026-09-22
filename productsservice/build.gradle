@@ -23,6 +23,7 @@ dependencies {
 	implementation(platform("software.amazon.awssdk:bom:2.21.15"))
 	implementation("software.amazon.awssdk:dynamodb")
 	implementation("software.amazon.awssdk:dynamodb-enhanced")
+	implementation("software.amazon.awssdk:sns")
 
 	implementation("com.amazonaws:aws-xray-recorder-sdk-spring:2.14.0")
 	implementation("com.amazonaws:aws-xray-recorder-sdk-aws-sdk-v2:2.14.0")
