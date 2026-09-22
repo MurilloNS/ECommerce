@@ -1,6 +1,6 @@
 package br.com.murillo.productsservice.products.repositories;
 
-import br.com.murillo.productsservice.exceptions.ProductException;
+import br.com.murillo.productsservice.products.exceptions.ProductException;
 import br.com.murillo.productsservice.products.enums.ProductErrors;
 import br.com.murillo.productsservice.products.models.Product;
 import com.amazonaws.xray.spring.aop.XRayEnabled;

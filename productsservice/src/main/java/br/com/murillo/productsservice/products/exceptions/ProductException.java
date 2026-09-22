@@ -1,4 +1,4 @@
-package br.com.murillo.productsservice.exceptions;
+package br.com.murillo.productsservice.products.exceptions;
 
 import br.com.murillo.productsservice.products.enums.ProductErrors;
 import jakarta.annotation.Nullable;

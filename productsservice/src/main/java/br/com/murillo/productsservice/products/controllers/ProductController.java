@@ -1,6 +1,6 @@
 package br.com.murillo.productsservice.products.controllers;
 
-import br.com.murillo.productsservice.exceptions.ProductException;
+import br.com.murillo.productsservice.products.exceptions.ProductException;
 import br.com.murillo.productsservice.products.dtos.ProductDTO;
 import br.com.murillo.productsservice.products.enums.ProductErrors;
 import br.com.murillo.productsservice.products.models.Product;
