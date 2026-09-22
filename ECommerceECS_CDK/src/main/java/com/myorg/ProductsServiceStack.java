@@ -17,6 +17,10 @@ import software.amazon.awscdk.services.iam.ManagedPolicy;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
+import software.amazon.awscdk.services.sns.Topic;
+import software.amazon.awscdk.services.sns.TopicProps;
+import software.amazon.awscdk.services.sns.subscriptions.EmailSubscription;
+import software.amazon.awscdk.services.sns.subscriptions.EmailSubscriptionProps;
 import software.constructs.Construct;
 
 import java.util.Collections;
@@ -25,9 +29,20 @@ import java.util.Map;
 import java.util.Objects;
 
 public class ProductsServiceStack extends Stack {
+    private final Topic productEventsTopic;
+
     public ProductsServiceStack(final Construct scope, final String id, final StackProps props,
                                 ProductsServiceProps productsServiceProps) {
         super(scope, id, props);
+
+        productEventsTopic = new Topic(this, "ProductEventsTopic", TopicProps.builder()
+                .displayName("Product events topic")
+                .topicName("product-events")
+                .build());
+
+        // TODO - to be removed
+        productEventsTopic.addSubscription(new EmailSubscription("murillo.murillo2001@gmail.com",
+                EmailSubscriptionProps.builder().json(true).build()));
 
         Table productsDdb = new Table(this, "ProductsDdb", TableProps.builder()
                 .partitionKey(Attribute.builder()
@@ -162,6 +177,10 @@ public class ProductsServiceStack extends Stack {
                                 .build())))
                 .build()
         );
+    }
+
+    public Topic getProductEventsTopic() {
+        return productEventsTopic;
     }
 }
 
