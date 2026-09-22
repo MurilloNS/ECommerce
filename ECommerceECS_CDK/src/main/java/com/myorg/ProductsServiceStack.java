@@ -73,6 +73,7 @@ public class ProductsServiceStack extends Stack {
                         .memoryLimitMiB(1024)
                         .build());
         productsDdb.grantReadWriteData(fargateTaskDefinition.getTaskRole());
+        productEventsTopic.grantPublish(fargateTaskDefinition.getTaskRole());
 
         AwsLogDriver logDriver = new AwsLogDriver(AwsLogDriverProps.builder()
                 .logGroup(new LogGroup(this, "LogGroup", LogGroupProps.builder()
@@ -86,6 +87,7 @@ public class ProductsServiceStack extends Stack {
         Map<String, String> envVariables = new HashMap<>();
         envVariables.put("SERVER_PORT", "8080");
         envVariables.put("AWS_PRODUCTSDDB_NAME", productsDdb.getTableName());
+        envVariables.put("AWS_SNS_TOPIC_PRODUCT_EVENTS", productEventsTopic.getTopicArn());
         envVariables.put("AWS_REGION", this.getRegion());
         envVariables.put("AWS_XRAY_DAEMON_ADDRESS", "0.0.0.0:2000");
         envVariables.put("AWS_XRAY_CONTEXT_MISSING", "IGNORE_ERROR");
