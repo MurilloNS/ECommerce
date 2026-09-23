@@ -95,7 +95,7 @@ public class ProductsServiceStack extends Stack {
 
         fargateTaskDefinition.addContainer("ProductsServiceContainer",
                 ContainerDefinitionOptions.builder()
-                        .image(ContainerImage.fromEcrRepository(productsServiceProps.repository(), "1.7.1"))
+                        .image(ContainerImage.fromEcrRepository(productsServiceProps.repository(), "1.8.0"))
                         .containerName("productsService")
                         .logging(logDriver)
                         .portMappings(Collections.singletonList(PortMapping.builder()
