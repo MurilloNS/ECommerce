@@ -2,6 +2,7 @@ package br.com.murillo.productsservice.events.services;
 
 import br.com.murillo.productsservice.events.dtos.EventType;
 import br.com.murillo.productsservice.events.dtos.ProductEventDTO;
+import br.com.murillo.productsservice.events.dtos.ProductFailureEventDTO;
 import br.com.murillo.productsservice.products.models.Product;
 import com.amazonaws.xray.AWSXRay;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -38,6 +39,11 @@ public class EventsPublisher {
             throws JsonProcessingException {
         ProductEventDTO productEventDTO = new ProductEventDTO(product.getId(), product.getCode(), email, product.getPrice());
         return sendEvent(objectMapper.writeValueAsString(productEventDTO), eventType);
+    }
+
+    public CompletableFuture<PublishResponse> sendProductFailureEvent(ProductFailureEventDTO productFailureEventDTO)
+            throws JsonProcessingException {
+        return sendEvent(objectMapper.writeValueAsString(productFailureEventDTO), EventType.PRODUCT_FAILURE);
     }
 
     private CompletableFuture<PublishResponse> sendEvent(String data, EventType eventType) {
