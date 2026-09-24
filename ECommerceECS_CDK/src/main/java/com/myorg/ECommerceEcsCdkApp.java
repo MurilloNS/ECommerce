@@ -82,11 +82,13 @@ public class ECommerceEcsCdkApp {
                         clusterStack.getCluster(),
                         nlbStack.getNetworkLoadBalancer(),
                         nlbStack.getApplicationLoadBalancer(),
-                        ecrStack.getAuditServiceRepository()));
+                        ecrStack.getAuditServiceRepository(),
+                        productsServiceStack.getProductEventsTopic()));
         auditServiceStack.addDependency(vpcStack);
         auditServiceStack.addDependency(clusterStack);
         auditServiceStack.addDependency(nlbStack);
         auditServiceStack.addDependency(ecrStack);
+        auditServiceStack.addDependency(productsServiceStack);
 
         ApiStack apiStack = new ApiStack(app, "Api", StackProps.builder()
                 .env(environment)

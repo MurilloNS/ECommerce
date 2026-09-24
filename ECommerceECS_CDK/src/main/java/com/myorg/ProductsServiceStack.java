@@ -19,8 +19,6 @@ import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.sns.Topic;
 import software.amazon.awscdk.services.sns.TopicProps;
-import software.amazon.awscdk.services.sns.subscriptions.EmailSubscription;
-import software.amazon.awscdk.services.sns.subscriptions.EmailSubscriptionProps;
 import software.constructs.Construct;
 
 import java.util.Collections;
@@ -39,10 +37,6 @@ public class ProductsServiceStack extends Stack {
                 .displayName("Product events topic")
                 .topicName("product-events")
                 .build());
-
-        // TODO - to be removed
-        productEventsTopic.addSubscription(new EmailSubscription("murillo.murillo2001@gmail.com",
-                EmailSubscriptionProps.builder().json(true).build()));
 
         Table productsDdb = new Table(this, "ProductsDdb", TableProps.builder()
                 .partitionKey(Attribute.builder()

@@ -16,6 +16,11 @@ import software.amazon.awscdk.services.iam.ManagedPolicy;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
+import software.amazon.awscdk.services.sns.Topic;
+import software.amazon.awscdk.services.sqs.DeadLetterQueue;
+import software.amazon.awscdk.services.sqs.Queue;
+import software.amazon.awscdk.services.sqs.QueueEncryption;
+import software.amazon.awscdk.services.sqs.QueueProps;
 import software.constructs.Construct;
 
 import java.util.Collections;
@@ -27,6 +32,23 @@ public class AuditServiceStack extends Stack {
     public AuditServiceStack(final Construct scope, final String id, final StackProps props,
                              AuditServiceProps auditServiceProps) {
         super(scope, id, props);
+
+        Queue productEventsDlq = new Queue(this, "ProductEventsDlq", QueueProps.builder()
+                .queueName("product-events-dlq")
+                .retentionPeriod(Duration.days(10))
+                .enforceSsl(false)
+                .encryption(QueueEncryption.UNENCRYPTED)
+                .build());
+
+        Queue productEventsQueue = new Queue(this, "ProductEventsQueue", QueueProps.builder()
+                .queueName("product-events")
+                .enforceSsl(false)
+                .encryption(QueueEncryption.UNENCRYPTED)
+                .deadLetterQueue(DeadLetterQueue.builder()
+                        .queue(productEventsDlq)
+                        .maxReceiveCount(3)
+                        .build())
+                .build());
 
         FargateTaskDefinition fargateTaskDefinition = new FargateTaskDefinition(this, "TaskDefinition",
                 FargateTaskDefinitionProps.builder()
@@ -141,4 +163,5 @@ public class AuditServiceStack extends Stack {
 }
 
 record AuditServiceProps(Vpc vpc, Cluster cluster, NetworkLoadBalancer networkLoadBalancer,
-                            ApplicationLoadBalancer applicationLoadBalancer, Repository repository) {}
+                         ApplicationLoadBalancer applicationLoadBalancer, Repository repository,
+                         Topic productEventsTopic) {}
