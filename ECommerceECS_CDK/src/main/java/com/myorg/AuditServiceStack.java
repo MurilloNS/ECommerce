@@ -59,6 +59,7 @@ public class AuditServiceStack extends Stack {
                         .memoryLimitMiB(1024)
                         .build());
         fargateTaskDefinition.getTaskRole().addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName("AWSXrayWriteOnlyAccess"));
+        productEventsQueue.grantConsumeMessages(fargateTaskDefinition.getTaskRole());
 
         AwsLogDriver logDriver = new AwsLogDriver(AwsLogDriverProps.builder()
                 .logGroup(new LogGroup(this, "LogGroup", LogGroupProps.builder()
@@ -75,6 +76,7 @@ public class AuditServiceStack extends Stack {
         envVariables.put("AWS_XRAY_DAEMON_ADDRESS", "0.0.0.0:2000");
         envVariables.put("AWS_XRAY_CONTEXT_MISSING", "IGNORE_ERROR");
         envVariables.put("AWS_XRAY_TRACING_NAME", "auditservice");
+        envVariables.put("AWS_SQS_QUEUE_PRODUCT_EVENTS_URL", productEventsQueue.getQueueUrl());
         envVariables.put("LOGGING_LEVEL_ROOT", "INFO");
 
         fargateTaskDefinition.addContainer("AuditServiceContainer",
