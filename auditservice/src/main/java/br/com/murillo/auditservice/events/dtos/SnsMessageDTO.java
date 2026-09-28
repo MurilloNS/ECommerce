@@ -5,4 +5,4 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public record SnsMessageDTO(@JsonProperty("Message") String message, @JsonProperty("Type") String type,
                             @JsonProperty("TopicArn") String topicArn, @JsonProperty("Timestamp") String timestamp,
                             @JsonProperty("MessageId") String messageId,
-                            @JsonProperty("MessageAttributes") SnsMessageAttribute messageAttributes) {}
+                            @JsonProperty("MessageAttributes") SnsAttributes messageAttributes) {}
