@@ -54,9 +54,29 @@ public class AuditServiceStack extends Stack {
         productsFilterPolicy.put("eventType", SubscriptionFilter.stringFilter(StringConditions.builder()
                 .allowlist(Arrays.asList("PRODUCT_CREATED", "PRODUCT_UPDATED", "PRODUCT_DELETED"))
                 .build()));
+
         auditServiceProps.productEventsTopic().addSubscription(new SqsSubscription(productEventsQueue,
                 SqsSubscriptionProps.builder()
                         .filterPolicy(productsFilterPolicy)
+                        .build()));
+
+        Queue productFailureEventsQueue = new Queue(this, "productFailureEventsQueue", QueueProps.builder()
+                .queueName("product-failure-events")
+                .enforceSsl(false)
+                .encryption(QueueEncryption.UNENCRYPTED)
+                .deadLetterQueue(DeadLetterQueue.builder()
+                        .queue(productEventsDlq)
+                        .maxReceiveCount(3)
+                        .build())
+                .build());
+        Map<String, SubscriptionFilter> productsFailureFilterPolicy = new HashMap<>();
+        productsFailureFilterPolicy.put("eventType", SubscriptionFilter.stringFilter(StringConditions.builder()
+                .allowlist(Collections.singletonList("PRODUCT_FAILURE"))
+                .build()));
+
+        auditServiceProps.productEventsTopic().addSubscription(new SqsSubscription(productFailureEventsQueue,
+                SqsSubscriptionProps.builder()
+                        .filterPolicy(productsFailureFilterPolicy)
                         .build()));
 
         FargateTaskDefinition fargateTaskDefinition = new FargateTaskDefinition(this, "TaskDefinition",
@@ -67,6 +87,7 @@ public class AuditServiceStack extends Stack {
                         .build());
         fargateTaskDefinition.getTaskRole().addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName("AWSXrayWriteOnlyAccess"));
         productEventsQueue.grantConsumeMessages(fargateTaskDefinition.getTaskRole());
+        productFailureEventsQueue.grantConsumeMessages(fargateTaskDefinition.getTaskRole());
 
         AwsLogDriver logDriver = new AwsLogDriver(AwsLogDriverProps.builder()
                 .logGroup(new LogGroup(this, "LogGroup", LogGroupProps.builder()
@@ -84,6 +105,7 @@ public class AuditServiceStack extends Stack {
         envVariables.put("AWS_XRAY_CONTEXT_MISSING", "IGNORE_ERROR");
         envVariables.put("AWS_XRAY_TRACING_NAME", "auditservice");
         envVariables.put("AWS_SQS_QUEUE_PRODUCT_EVENTS_URL", productEventsQueue.getQueueUrl());
+        envVariables.put("AWS_SQS_QUEUE_PRODUCT_FAILURE_EVENTS_URL", productFailureEventsQueue.getQueueUrl());
         envVariables.put("LOGGING_LEVEL_ROOT", "INFO");
 
         fargateTaskDefinition.addContainer("AuditServiceContainer",
