@@ -16,18 +16,18 @@ import software.amazon.awscdk.services.iam.ManagedPolicy;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
+import software.amazon.awscdk.services.sns.StringConditions;
+import software.amazon.awscdk.services.sns.SubscriptionFilter;
 import software.amazon.awscdk.services.sns.Topic;
 import software.amazon.awscdk.services.sns.subscriptions.SqsSubscription;
+import software.amazon.awscdk.services.sns.subscriptions.SqsSubscriptionProps;
 import software.amazon.awscdk.services.sqs.DeadLetterQueue;
 import software.amazon.awscdk.services.sqs.Queue;
 import software.amazon.awscdk.services.sqs.QueueEncryption;
 import software.amazon.awscdk.services.sqs.QueueProps;
 import software.constructs.Construct;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 public class AuditServiceStack extends Stack {
     public AuditServiceStack(final Construct scope, final String id, final StackProps props,
@@ -50,7 +50,14 @@ public class AuditServiceStack extends Stack {
                         .maxReceiveCount(3)
                         .build())
                 .build());
-        auditServiceProps.productEventsTopic().addSubscription(new SqsSubscription(productEventsQueue));
+        Map<String, SubscriptionFilter> productsFilterPolicy = new HashMap<>();
+        productsFilterPolicy.put("eventType", SubscriptionFilter.stringFilter(StringConditions.builder()
+                .allowlist(Arrays.asList("PRODUCT_CREATED", "PRODUCT_UPDATED", "PRODUCT_DELETED"))
+                .build()));
+        auditServiceProps.productEventsTopic().addSubscription(new SqsSubscription(productEventsQueue,
+                SqsSubscriptionProps.builder()
+                        .filterPolicy(productsFilterPolicy)
+                        .build()));
 
         FargateTaskDefinition fargateTaskDefinition = new FargateTaskDefinition(this, "TaskDefinition",
                 FargateTaskDefinitionProps.builder()
