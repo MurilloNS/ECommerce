@@ -26,7 +26,8 @@ public class ProductEventRepository {
     public ProductEventRepository(@Value("${aws.events.ddb}") String eventsDdbName,
                                   DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient) {
         this.dynamoDbEnhancedAsyncClient = dynamoDbEnhancedAsyncClient;
-        this.productEventTable = dynamoDbEnhancedAsyncClient.table(eventsDdbName, TableSchema.fromBean(ProductEvent.class));
+        this.productEventTable = dynamoDbEnhancedAsyncClient
+                .table(eventsDdbName, TableSchema.fromBean(ProductEvent.class));
     }
 
     public CompletableFuture<Void> create(ProductEventDTO productEventDTO, ProductEventType productEventType,

@@ -3,6 +3,7 @@ package br.com.murillo.auditservice.products.services;
 import br.com.murillo.auditservice.events.dtos.ProductEventType;
 import br.com.murillo.auditservice.events.dtos.ProductFailureEventDTO;
 import br.com.murillo.auditservice.events.dtos.SnsMessageDTO;
+import br.com.murillo.auditservice.products.repositories.ProductFailureEventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,10 +26,12 @@ public class ProductFailureEventsConsumer {
     private final SqsAsyncClient sqsAsyncClient;
     private final String productFailureEventsQueueUrl;
     private final ReceiveMessageRequest receiveMessageRequest;
+    private final ProductFailureEventRepository productFailureEventRepository;
 
     @Autowired
     public ProductFailureEventsConsumer(ObjectMapper objectMapper, SqsAsyncClient sqsAsyncClient,
-                                 @Value("${aws.sqs.queue.product.failure.events.url}") String productFailureEventsQueueUrl) {
+                                        @Value("${aws.sqs.queue.product.failure.events.url}") String productFailureEventsQueueUrl,
+                                        ProductFailureEventRepository productFailureEventRepository) {
         this.objectMapper = objectMapper;
         this.sqsAsyncClient = sqsAsyncClient;
         this.productFailureEventsQueueUrl = productFailureEventsQueueUrl;
@@ -36,6 +39,7 @@ public class ProductFailureEventsConsumer {
                 .maxNumberOfMessages(10)
                 .queueUrl(productFailureEventsQueueUrl)
                 .build();
+        this.productFailureEventRepository = productFailureEventRepository;
     }
 
     @Scheduled(fixedDelay = 5000)
