@@ -14,10 +14,12 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
+import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class ProductEventsConsumer {
@@ -50,15 +52,25 @@ public class ProductEventsConsumer {
             messages.parallelStream().forEach(message -> {
                 try {
                     SnsMessageDTO snsMessageDTO = objectMapper.readValue(message.body(), SnsMessageDTO.class);
-                    ThreadContext.put("messageId", snsMessageDTO.messageId());
-                    ThreadContext.put("requestId", snsMessageDTO.messageAttributes().requestId().value());
+                    String messageId = snsMessageDTO.messageId();
+                    String requestId = snsMessageDTO.messageAttributes().requestId().value();
+                    String traceId = snsMessageDTO.messageAttributes().traceId().value();
+
+                    ThreadContext.put("messageId", messageId);
+                    ThreadContext.put("requestId", requestId);
                     ProductEventType eventType = ProductEventType.
                             valueOf(snsMessageDTO.messageAttributes().eventType().value());
+
+                    CompletableFuture<Void> productEventFuture;
 
                     switch (eventType) {
                         case PRODUCT_CREATED, PRODUCT_UPDATED, PRODUCT_DELETED -> {
                             ProductEventDTO productEventDTO = objectMapper
                                     .readValue(snsMessageDTO.message(), ProductEventDTO.class);
+
+                            productEventFuture = productEventRepository
+                                    .create(productEventDTO, eventType, messageId, requestId, traceId);
+
                             LOG.info("Product event: {} - Id: {} ", eventType, productEventDTO.id());
                         }
                         default -> {
@@ -67,10 +79,14 @@ public class ProductEventsConsumer {
                         }
                     }
 
-                    sqsAsyncClient.deleteMessage(DeleteMessageRequest.builder()
+                     CompletableFuture<DeleteMessageResponse> deleteMessageCompletableFuture =
+                             sqsAsyncClient.deleteMessage(DeleteMessageRequest.builder()
                             .queueUrl(productEventsQueueUrl)
                             .receiptHandle(message.receiptHandle())
-                            .build()).join();
+                            .build());
+
+                    CompletableFuture.allOf(productEventFuture, deleteMessageCompletableFuture).join();
+
                     LOG.info("Message deleted...");
                 } catch (Exception e) {
                     LOG.error("Failed to parse product event message");
