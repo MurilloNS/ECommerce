@@ -3,6 +3,7 @@ package br.com.murillo.auditservice.products.services;
 import br.com.murillo.auditservice.events.dtos.ProductEventDTO;
 import br.com.murillo.auditservice.events.dtos.ProductEventType;
 import br.com.murillo.auditservice.events.dtos.SnsMessageDTO;
+import br.com.murillo.auditservice.products.repositories.ProductEventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,10 +26,12 @@ public class ProductEventsConsumer {
     private final SqsAsyncClient sqsAsyncClient;
     private final String productEventsQueueUrl;
     private final ReceiveMessageRequest receiveMessageRequest;
+    private final ProductEventRepository productEventRepository;
 
     @Autowired
     public ProductEventsConsumer(ObjectMapper objectMapper, SqsAsyncClient sqsAsyncClient,
-                                 @Value("${aws.sqs.queue.product.events.url}") String productEventsQueueUrl) {
+                                 @Value("${aws.sqs.queue.product.events.url}") String productEventsQueueUrl,
+                                 ProductEventRepository productEventRepository) {
         this.objectMapper = objectMapper;
         this.sqsAsyncClient = sqsAsyncClient;
         this.productEventsQueueUrl = productEventsQueueUrl;
@@ -36,6 +39,7 @@ public class ProductEventsConsumer {
                 .maxNumberOfMessages(5)
                 .queueUrl(productEventsQueueUrl)
                 .build();
+        this.productEventRepository = productEventRepository;
     }
 
     @Scheduled(fixedDelay = 1000)
