@@ -4,6 +4,7 @@ import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.services.dynamodb.*;
 import software.amazon.awscdk.services.ec2.Peer;
 import software.amazon.awscdk.services.ec2.Port;
 import software.amazon.awscdk.services.ec2.Vpc;
@@ -33,6 +34,23 @@ public class AuditServiceStack extends Stack {
     public AuditServiceStack(final Construct scope, final String id, final StackProps props,
                              AuditServiceProps auditServiceProps) {
         super(scope, id, props);
+
+        Table eventsDdb = new Table(this, "EventsDdb", TableProps.builder()
+                .tableName("events")
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .partitionKey(Attribute.builder()
+                        .name("pk")
+                        .type(AttributeType.STRING)
+                        .build())
+                .sortKey(Attribute.builder()
+                        .name("sk")
+                        .type(AttributeType.STRING)
+                        .build())
+                .timeToLiveAttribute("ttl")
+                .billingMode(BillingMode.PROVISIONED)
+                .readCapacity(1)
+                .writeCapacity(1)
+                .build());
 
         Queue productEventsDlq = new Queue(this, "ProductEventsDlq", QueueProps.builder()
                 .queueName("product-events-dlq")
@@ -88,6 +106,7 @@ public class AuditServiceStack extends Stack {
         fargateTaskDefinition.getTaskRole().addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName("AWSXrayWriteOnlyAccess"));
         productEventsQueue.grantConsumeMessages(fargateTaskDefinition.getTaskRole());
         productFailureEventsQueue.grantConsumeMessages(fargateTaskDefinition.getTaskRole());
+        eventsDdb.grantReadWriteData(fargateTaskDefinition.getTaskRole());
 
         AwsLogDriver logDriver = new AwsLogDriver(AwsLogDriverProps.builder()
                 .logGroup(new LogGroup(this, "LogGroup", LogGroupProps.builder()
@@ -106,6 +125,7 @@ public class AuditServiceStack extends Stack {
         envVariables.put("AWS_XRAY_TRACING_NAME", "auditservice");
         envVariables.put("AWS_SQS_QUEUE_PRODUCT_EVENTS_URL", productEventsQueue.getQueueUrl());
         envVariables.put("AWS_SQS_QUEUE_PRODUCT_FAILURE_EVENTS_URL", productFailureEventsQueue.getQueueUrl());
+        envVariables.put("AWS_EVENTS_DDB", eventsDdb.getTableName());
         envVariables.put("LOGGING_LEVEL_ROOT", "INFO");
 
         fargateTaskDefinition.addContainer("AuditServiceContainer",
