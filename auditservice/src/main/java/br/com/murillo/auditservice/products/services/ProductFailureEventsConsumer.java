@@ -14,10 +14,12 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
+import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class ProductFailureEventsConsumer {
@@ -50,24 +52,38 @@ public class ProductFailureEventsConsumer {
             messages.parallelStream().forEach(message -> {
                 try {
                     SnsMessageDTO snsMessageDTO = objectMapper.readValue(message.body(), SnsMessageDTO.class);
-                    ThreadContext.put("messageId", snsMessageDTO.messageId());
-                    ThreadContext.put("requestId", snsMessageDTO.messageAttributes().requestId().value());
+                    String messageId = snsMessageDTO.messageId();
+                    String requestId = snsMessageDTO.messageAttributes().requestId().value();
+                    String traceId = snsMessageDTO.messageAttributes().traceId().value();
+
+                    ThreadContext.put("messageId", messageId);
+                    ThreadContext.put("requestId", requestId);
                     ProductEventType eventType = ProductEventType.
                             valueOf(snsMessageDTO.messageAttributes().eventType().value());
+
+                    CompletableFuture<Void> productFailureEventFuture;
 
                     if (ProductEventType.PRODUCT_FAILURE == eventType) {
                         ProductFailureEventDTO productFailureEventDTO = objectMapper
                                 .readValue(snsMessageDTO.message(), ProductFailureEventDTO.class);
+
+                        productFailureEventFuture = productFailureEventRepository
+                                .create(productFailureEventDTO, eventType, messageId, requestId, traceId);
+
                         LOG.info("Product failure event: {} - Id: {} ", eventType, productFailureEventDTO.id());
                     } else {
                         LOG.error("Invalid product failure event: {} ", eventType);
                         throw new Exception("Invalid product failure event");
                     }
 
-                    sqsAsyncClient.deleteMessage(DeleteMessageRequest.builder()
+                    CompletableFuture<DeleteMessageResponse> deleteMessageCompletableFuture =
+                            sqsAsyncClient.deleteMessage(DeleteMessageRequest.builder()
                             .queueUrl(productFailureEventsQueueUrl)
                             .receiptHandle(message.receiptHandle())
-                            .build()).join();
+                            .build());
+
+                    CompletableFuture.allOf(productFailureEventFuture, deleteMessageCompletableFuture).join();
+
                     LOG.info("Message deleted...");
                 } catch (Exception e) {
                     LOG.error("Failed to parse product failure event message");

@@ -40,15 +40,15 @@ public class ProductFailureEventRepository {
         productFailureEvent.setSk(String.valueOf(timestamp));
         productFailureEvent.setCreatedAt(timestamp);
         productFailureEvent.setTtl(ttl);
-        productFailureEvent.setEmail(productFailureEvent.getEmail());
+        productFailureEvent.setEmail(productFailureEventDTO.email());
 
         ProductInfoFailureEvent productInfoFailureEvent = new ProductInfoFailureEvent();
         productInfoFailureEvent.setId(productFailureEventDTO.id());
         productInfoFailureEvent.setMessageId(messageId);
         productInfoFailureEvent.setRequestId(requestId);
         productInfoFailureEvent.setTraceId(traceId);
-        productInfoFailureEvent.setError(productInfoFailureEvent.getError());
-        productInfoFailureEvent.setStatus(productInfoFailureEvent.getStatus());
+        productInfoFailureEvent.setError(productFailureEventDTO.error());
+        productInfoFailureEvent.setStatus(productFailureEventDTO.status());
 
         productFailureEvent.setInfo(productInfoFailureEvent);
         return productFailureEventTable.putItem(productFailureEvent);

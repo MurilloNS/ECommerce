@@ -40,7 +40,7 @@ public class ProductEventRepository {
         productEvent.setSk(String.valueOf(timestamp));
         productEvent.setCreatedAt(timestamp);
         productEvent.setTtl(ttl);
-        productEvent.setEmail(productEvent.getEmail());
+        productEvent.setEmail(productEventDTO.email());
 
         ProductInfoEvent productInfoEvent = new ProductInfoEvent();
         productInfoEvent.setId(productEventDTO.id());
