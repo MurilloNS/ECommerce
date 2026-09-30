@@ -61,6 +61,40 @@ public class ProductsServiceStack extends Stack {
                 .writeCapacity(1)
                 .build());
 
+        IScalableTableAttribute readScale = productsDdb
+                .autoScaleReadCapacity(software.amazon.awscdk.services.dynamodb.EnableScalingProps.builder()
+                        .maxCapacity(4)
+                        .minCapacity(1)
+                        .build());
+        readScale.scaleOnUtilization(UtilizationScalingProps.builder()
+                .targetUtilizationPercent(10)
+                .scaleInCooldown(Duration.seconds(20))
+                .scaleOutCooldown(Duration.seconds(20))
+                .build());
+
+        IScalableTableAttribute writeScale = productsDdb
+                .autoScaleWriteCapacity(software.amazon.awscdk.services.dynamodb.EnableScalingProps.builder()
+                        .maxCapacity(4)
+                        .minCapacity(1)
+                        .build());
+        writeScale.scaleOnUtilization(UtilizationScalingProps.builder()
+                .targetUtilizationPercent(10)
+                .scaleInCooldown(Duration.seconds(20))
+                .scaleOutCooldown(Duration.seconds(20))
+                .build());
+
+        IScalableTableAttribute readIndexScale = productsDdb
+                .autoScaleGlobalSecondaryIndexReadCapacity("codeIdx",
+                        software.amazon.awscdk.services.dynamodb.EnableScalingProps.builder()
+                        .maxCapacity(4)
+                        .minCapacity(1)
+                        .build());
+        readIndexScale.scaleOnUtilization(UtilizationScalingProps.builder()
+                .targetUtilizationPercent(10)
+                .scaleInCooldown(Duration.seconds(20))
+                .scaleOutCooldown(Duration.seconds(20))
+                .build());
+
         FargateTaskDefinition fargateTaskDefinition = new FargateTaskDefinition(this, "TaskDefinition",
                 FargateTaskDefinitionProps.builder()
                         .family("products-service")
