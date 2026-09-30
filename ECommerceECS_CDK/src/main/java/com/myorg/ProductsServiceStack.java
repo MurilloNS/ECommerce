@@ -4,6 +4,7 @@ import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.services.applicationautoscaling.EnableScalingProps;
 import software.amazon.awscdk.services.dynamodb.*;
 import software.amazon.awscdk.services.ec2.Peer;
 import software.amazon.awscdk.services.ec2.Port;
@@ -172,6 +173,16 @@ public class ProductsServiceStack extends Stack {
                                 .containerPort(8080)
                                 .protocol(Protocol.TCP)
                                 .build())))
+                .build());
+
+        ScalableTaskCount scalableTaskCount = fargateService.autoScaleTaskCount(EnableScalingProps.builder()
+                .maxCapacity(4)
+                .minCapacity(2)
+                .build());
+        scalableTaskCount.scaleOnCpuUtilization("ProductsServiceAutoScaling", CpuUtilizationScalingProps.builder()
+                .targetUtilizationPercent(10)
+                .scaleInCooldown(Duration.seconds(60))
+                .scaleOutCooldown(Duration.seconds(60))
                 .build());
     }
 
