@@ -79,4 +79,17 @@ public class ProductEventRepository {
                 .limit(limit)
                 .build()).limit(1);
     }
+
+    public SdkPublisher<Page<ProductEvent>> findByTypeAndRange(String productEventType, String exclusiveStartTimestamp,
+                                                               String from, String to, int limit) {
+        String pk = "#product_".concat(productEventType);
+
+        return productEventTable.query(QueryEnhancedRequest.builder()
+                .queryConditional(QueryConditional.sortBetween(
+                        Key.builder().partitionValue(pk).sortValue(from).build(),
+                        Key.builder().partitionValue(pk).sortValue(to).build()))
+                .exclusiveStartKey(buildExclusiveStartKey(pk, exclusiveStartTimestamp))
+                .limit(limit)
+                .build()).limit(1);
+    }
 }
