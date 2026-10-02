@@ -4,6 +4,7 @@ import br.com.murillo.auditservice.events.dtos.ProductEventDTO;
 import br.com.murillo.auditservice.events.dtos.ProductEventType;
 import br.com.murillo.auditservice.products.models.ProductEvent;
 import br.com.murillo.auditservice.products.models.ProductInfoEvent;
+import com.amazonaws.xray.spring.aop.XRayEnabled;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Repository
+@XRayEnabled
 public class ProductEventRepository {
     private static final Logger LOG = LogManager.getLogger(ProductEventRepository.class);
     private final DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient;
