@@ -1,4 +1,4 @@
-package br.com.murillo.auditservice.config;
+package br.com.murillo.invoicesservice.config;
 
 import com.amazonaws.xray.AWSXRay;
 import com.amazonaws.xray.AWSXRayRecorder;
@@ -18,24 +18,24 @@ import java.net.URL;
 @Configuration
 public class XRayConfig {
     private static final Logger LOG = LoggerFactory.getLogger(XRayConfig.class);
-
+    
     public XRayConfig() {
         try {
             URL ruleFile = ResourceUtils.getURL("classpath:xray/xray-sampling-rules.json");
-
+            
             AWSXRayRecorder awsxRayRecorder = AWSXRayRecorderBuilder.standard()
                     .withDefaultPlugins()
                     .withSamplingStrategy(new CentralizedSamplingStrategy(ruleFile))
                     .build();
 
-            AWSXRay.setGlobalRecorder(awsxRayRecorder);
+            AWSXRay.setGlobalRecorder(awsxRayRecorder);            
         } catch (FileNotFoundException e) {
-            LOG.error("XRay config file not found.");
+            LOG.error("XRay config file not found");
         }
     }
-
+    
     @Bean
-    public Filter tracingFilter() {
-        return new AWSXRayServletFilter("auditservice");
+    public Filter TracingFilter() {
+        return new AWSXRayServletFilter("invoicesservice");
     }
 }
