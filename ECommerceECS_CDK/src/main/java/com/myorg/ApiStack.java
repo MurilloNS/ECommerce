@@ -47,7 +47,41 @@ public class ApiStack extends Stack {
 
         Resource productsResource = this.createProductsResource(restApi, apiStackProps);
 
-        this.createProductEventsResource(restApi, apiStackProps, productsResource);
+        createProductEventsResource(restApi, apiStackProps, productsResource);
+
+        createInvoicesResource(restApi, apiStackProps);
+    }
+
+    private void createInvoicesResource(RestApi restApi, ApiStackProps apiStackProps) {
+        // /invoices
+        Resource invoicesResource = restApi.getRoot().addResource("invoices");
+
+        Map<String, String> invoicesIntegrationParameters = new HashMap<>();
+        invoicesIntegrationParameters.put("integration.request.header.requestId", "context.requestId");
+
+        Map<String, Boolean> invoicesMethodParameters = new HashMap<>();
+        invoicesMethodParameters.put("method.request.header.requestId", false);
+
+        // POST /invoices - create a new pre-signed URL
+        invoicesResource.addMethod("POST", new Integration(IntegrationProps.builder()
+                .type(IntegrationType.HTTP_PROXY)
+                .integrationHttpMethod("POST")
+                .uri("http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() +
+                        ":9095/api/invoices")
+                .options(IntegrationOptions.builder()
+                        .vpcLink(apiStackProps.vpcLink())
+                        .connectionType(ConnectionType.VPC_LINK)
+                        .requestParameters(invoicesIntegrationParameters)
+                        .build())
+                .build()), MethodOptions.builder()
+                .requestValidator(new RequestValidator(this, "InvoicesValidator",
+                        RequestValidatorProps.builder()
+                                .restApi(restApi)
+                                .requestValidatorName("InvoicesValidator")
+                                .validateRequestParameters(true)
+                                .build()))
+                .requestParameters(invoicesMethodParameters)
+                .build());
     }
 
     private void createProductEventsResource(RestApi restApi, ApiStackProps apiStackProps, Resource productsResource) {
