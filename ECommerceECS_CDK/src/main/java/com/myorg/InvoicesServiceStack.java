@@ -4,6 +4,7 @@ import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.services.dynamodb.*;
 import software.amazon.awscdk.services.ec2.Peer;
 import software.amazon.awscdk.services.ec2.Port;
 import software.amazon.awscdk.services.ec2.Vpc;
@@ -16,7 +17,6 @@ import software.amazon.awscdk.services.iam.ManagedPolicy;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
-import software.amazon.awscdk.services.sns.Topic;
 import software.constructs.Construct;
 
 import java.util.Collections;
@@ -29,6 +29,23 @@ public class InvoicesServiceStack extends Stack {
                                 InvoicesServiceProps invoicesServiceProps) {
         super(scope, id, props);
 
+        Table invoicesDdb = new Table(this, "InvoicesDdb", TableProps.builder()
+                .tableName("invoices")
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .partitionKey(Attribute.builder()
+                        .name("pk")
+                        .type(AttributeType.STRING)
+                        .build())
+                .sortKey(Attribute.builder()
+                        .name("sk")
+                        .type(AttributeType.STRING)
+                        .build())
+                .timeToLiveAttribute("ttl")
+                .billingMode(BillingMode.PROVISIONED)
+                .readCapacity(1)
+                .writeCapacity(1)
+                .build());
+
         FargateTaskDefinition fargateTaskDefinition = new FargateTaskDefinition(this, "TaskDefinition",
                 FargateTaskDefinitionProps.builder()
                         .family("invoices-service")
@@ -36,6 +53,7 @@ public class InvoicesServiceStack extends Stack {
                         .memoryLimitMiB(1024)
                         .build());
         fargateTaskDefinition.getTaskRole().addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName("AWSXrayWriteOnlyAccess"));
+        invoicesDdb.grantReadWriteData(fargateTaskDefinition.getTaskRole());
 
         AwsLogDriver logDriver = new AwsLogDriver(AwsLogDriverProps.builder()
                 .logGroup(new LogGroup(this, "LogGroup", LogGroupProps.builder()
@@ -53,6 +71,7 @@ public class InvoicesServiceStack extends Stack {
         envVariables.put("AWS_XRAY_CONTEXT_MISSING", "IGNORE_ERROR");
         envVariables.put("AWS_XRAY_TRACING_NAME", "invoicesservice");
         envVariables.put("LOGGING_LEVEL_ROOT", "INFO");
+        envVariables.put("INVOICES_DDB_NAME", invoicesDdb.getTableName());
 
         fargateTaskDefinition.addContainer("InvoicesServiceContainer",
                 ContainerDefinitionOptions.builder()
