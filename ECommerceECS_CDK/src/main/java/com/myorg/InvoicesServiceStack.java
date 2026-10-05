@@ -19,7 +19,9 @@ import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketProps;
+import software.amazon.awscdk.services.s3.EventType;
 import software.amazon.awscdk.services.s3.LifecycleRule;
+import software.amazon.awscdk.services.s3.notifications.SqsDestination;
 import software.amazon.awscdk.services.sqs.DeadLetterQueue;
 import software.amazon.awscdk.services.sqs.Queue;
 import software.amazon.awscdk.services.sqs.QueueEncryption;
@@ -73,6 +75,7 @@ public class InvoicesServiceStack extends Stack {
                         .maxReceiveCount(3)
                         .build())
                 .build());
+        bucket.addEventNotification(EventType.OBJECT_CREATED, new SqsDestination(invoicesEvents));
 
         FargateTaskDefinition fargateTaskDefinition = new FargateTaskDefinition(this, "TaskDefinition",
                 FargateTaskDefinitionProps.builder()
