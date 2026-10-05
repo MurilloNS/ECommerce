@@ -20,6 +20,10 @@ import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketProps;
 import software.amazon.awscdk.services.s3.LifecycleRule;
+import software.amazon.awscdk.services.sqs.DeadLetterQueue;
+import software.amazon.awscdk.services.sqs.Queue;
+import software.amazon.awscdk.services.sqs.QueueEncryption;
+import software.amazon.awscdk.services.sqs.QueueProps;
 import software.constructs.Construct;
 
 import java.util.*;
@@ -55,6 +59,21 @@ public class InvoicesServiceStack extends Stack {
                         .build()))
                 .build());
 
+        Queue invoicesEventsDlq = new Queue(this, "InvoicesEventsDlq", QueueProps.builder()
+                .queueName("invoices-events-dlq")
+                .enforceSsl(false)
+                .encryption(QueueEncryption.UNENCRYPTED)
+                .build());
+        Queue invoicesEvents= new Queue(this, "InvoicesEvents", QueueProps.builder()
+                .queueName("invoices-events")
+                .enforceSsl(false)
+                .encryption(QueueEncryption.UNENCRYPTED)
+                .deadLetterQueue(DeadLetterQueue.builder()
+                        .queue(invoicesEventsDlq)
+                        .maxReceiveCount(3)
+                        .build())
+                .build());
+
         FargateTaskDefinition fargateTaskDefinition = new FargateTaskDefinition(this, "TaskDefinition",
                 FargateTaskDefinitionProps.builder()
                         .family("invoices-service")
@@ -63,6 +82,7 @@ public class InvoicesServiceStack extends Stack {
                         .build());
         fargateTaskDefinition.getTaskRole().addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName("AWSXrayWriteOnlyAccess"));
         invoicesDdb.grantReadWriteData(fargateTaskDefinition.getTaskRole());
+        invoicesEvents.grantConsumeMessages(fargateTaskDefinition.getTaskRole());
 
         PolicyStatement invoicesBucketPutObjectPolicy = new PolicyStatement(PolicyStatementProps.builder()
                 .effect(Effect.ALLOW)
@@ -92,6 +112,7 @@ public class InvoicesServiceStack extends Stack {
         envVariables.put("LOGGING_LEVEL_ROOT", "INFO");
         envVariables.put("INVOICES_DDB_NAME", invoicesDdb.getTableName());
         envVariables.put("INVOICES_BUCKET_NAME", bucket.getBucketName());
+        envVariables.put("AWS_SQS_QUEUE_INVOICES_EVENTS_URL", invoicesEvents.getQueueUrl());
 
         fargateTaskDefinition.addContainer("InvoicesServiceContainer",
                 ContainerDefinitionOptions.builder()
