@@ -82,6 +82,39 @@ public class ApiStack extends Stack {
                                 .build()))
                 .requestParameters(invoicesMethodParameters)
                 .build());
+
+        Map<String, String> invoiceFileTransactionIntegrationParameters = new HashMap<>();
+        invoiceFileTransactionIntegrationParameters.put("integration.request.path.fileTransactionId",
+                "method.request.path.fileTransactionId");
+        invoiceFileTransactionIntegrationParameters.put("integration.request.header.requestId", "context.requestId");
+
+        Map<String, Boolean> invoiceFileTransactionMethodParameters = new HashMap<>();
+        invoiceFileTransactionMethodParameters.put("method.request.header.path.fileTransactionId", true);
+        invoiceFileTransactionMethodParameters.put("method.request.header.requestId", false);
+
+        // GET /invoices/transactions/{fileTransactionId}
+        Resource invoiceTransactionsResource = invoicesResource.addResource("transactions");
+        Resource invoiceFileTransactionsResource = invoiceTransactionsResource.addResource("fileTransactionId");
+
+        invoiceFileTransactionsResource.addMethod("GET", new Integration(IntegrationProps.builder()
+                .type(IntegrationType.HTTP_PROXY)
+                .integrationHttpMethod("GET")
+                .uri("http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() +
+                        ":9095/api/invoices/transactions/{fileTransactionId}")
+                .options(IntegrationOptions.builder()
+                        .vpcLink(apiStackProps.vpcLink())
+                        .connectionType(ConnectionType.VPC_LINK)
+                        .requestParameters(invoiceFileTransactionIntegrationParameters)
+                        .build())
+                .build()), MethodOptions.builder()
+                .requestValidator(new RequestValidator(this, "InvoiceTransactionsValidator",
+                        RequestValidatorProps.builder()
+                                .restApi(restApi)
+                                .requestValidatorName("InvoiceTransactionsValidator")
+                                .validateRequestParameters(true)
+                                .build()))
+                .requestParameters(invoiceFileTransactionMethodParameters)
+                .build());
     }
 
     private void createProductEventsResource(RestApi restApi, ApiStackProps apiStackProps, Resource productsResource) {
