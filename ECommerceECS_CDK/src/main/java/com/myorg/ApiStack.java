@@ -89,12 +89,12 @@ public class ApiStack extends Stack {
         invoiceFileTransactionIntegrationParameters.put("integration.request.header.requestId", "context.requestId");
 
         Map<String, Boolean> invoiceFileTransactionMethodParameters = new HashMap<>();
-        invoiceFileTransactionMethodParameters.put("method.request.header.path.fileTransactionId", true);
+        invoiceFileTransactionMethodParameters.put("method.request.path.fileTransactionId", true);
         invoiceFileTransactionMethodParameters.put("method.request.header.requestId", false);
 
         // GET /invoices/transactions/{fileTransactionId}
         Resource invoiceTransactionsResource = invoicesResource.addResource("transactions");
-        Resource invoiceFileTransactionsResource = invoiceTransactionsResource.addResource("fileTransactionId");
+        Resource invoiceFileTransactionsResource = invoiceTransactionsResource.addResource("{fileTransactionId}");
 
         invoiceFileTransactionsResource.addMethod("GET", new Integration(IntegrationProps.builder()
                 .type(IntegrationType.HTTP_PROXY)
@@ -114,6 +114,31 @@ public class ApiStack extends Stack {
                                 .validateRequestParameters(true)
                                 .build()))
                 .requestParameters(invoiceFileTransactionMethodParameters)
+                .build());
+
+        // GET /invoices?email=matilde@email.com
+        Map<String, Boolean> customerInvoicesMethodParameters = new HashMap<>();
+        customerInvoicesMethodParameters.put("method.request.header.requestId", false);
+        customerInvoicesMethodParameters.put("method.request.querystring.email", true);
+
+        invoicesResource.addMethod("GET", new Integration(IntegrationProps.builder()
+                .type(IntegrationType.HTTP_PROXY)
+                .integrationHttpMethod("GET")
+                .uri("http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() +
+                        ":9095/api/invoices")
+                .options(IntegrationOptions.builder()
+                        .vpcLink(apiStackProps.vpcLink())
+                        .connectionType(ConnectionType.VPC_LINK)
+                        .requestParameters(invoicesIntegrationParameters)
+                        .build())
+                .build()), MethodOptions.builder()
+                .requestValidator(new RequestValidator(this, "CustomerInvoicesValidator",
+                        RequestValidatorProps.builder()
+                                .restApi(restApi)
+                                .requestValidatorName("CustomerInvoicesValidator")
+                                .validateRequestParameters(true)
+                                .build()))
+                .requestParameters(customerInvoicesMethodParameters)
                 .build());
     }
 
