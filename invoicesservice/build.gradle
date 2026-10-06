@@ -24,6 +24,10 @@ dependencies {
 	implementation("software.amazon.awssdk:dynamodb")
 	implementation("software.amazon.awssdk:dynamodb-enhanced")
 	implementation("software.amazon.awssdk:sqs")
+	implementation("software.amazon.awssdk:s3")
+
+	implementation("com.amazon.aws:aws-lambda-java-events:3.11.3")
+	implementation("com.amazon.aws:aws-lambda-java-serialization:1.1.4")
 
 	implementation('com.amazonaws:aws-xray-recorder-sdk-spring:2.14.0')
 	implementation('com.amazonaws:aws-xray-recorder-sdk-aws-sdk-v2:2.14.0')
