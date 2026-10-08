@@ -5,10 +5,8 @@ import br.com.murillo.invoicesservice.invoices.models.InvoiceFileTransaction;
 import com.amazonaws.xray.spring.aop.XRayEnabled;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
-import software.amazon.awssdk.enhanced.dynamodb.Expression;
-import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
+import software.amazon.awssdk.enhanced.dynamodb.*;
+import software.amazon.awssdk.enhanced.dynamodb.model.GetItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
 
 import java.time.Instant;
@@ -56,6 +54,15 @@ public class InvoiceFileTransactionsRepository {
                 .ignoreNulls(true)
                 .conditionExpression(Expression.builder()
                         .expression("attribute_exists(sk)")
+                        .build())
+                .build());
+    }
+
+    public CompletableFuture<InvoiceFileTransaction> getInvoiceFileTransaction(String transactionId) {
+        return invoiceFileTransactionTable.getItem(GetItemEnhancedRequest.builder()
+                .key(Key.builder()
+                        .partitionValue(PARTITION_KEY)
+                        .sortValue(transactionId)
                         .build())
                 .build());
     }
