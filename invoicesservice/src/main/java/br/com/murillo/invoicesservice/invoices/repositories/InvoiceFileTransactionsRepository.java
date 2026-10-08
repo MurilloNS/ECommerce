@@ -7,7 +7,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
+import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
+import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
 
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
@@ -26,13 +28,13 @@ public class InvoiceFileTransactionsRepository {
                 .table(invoicesDdbName, TableSchema.fromBean(InvoiceFileTransaction.class));
     }
 
-    public CompletableFuture<Void> createInvoiceFileTransaction(String key, String requestId, int expiresIn) {
+    public CompletableFuture<Void> createInvoiceFileTransaction(String transactionId, String requestId, int expiresIn) {
         long timestamp = Instant.now().toEpochMilli();
         long ttl = Instant.now().plusSeconds(300).getEpochSecond();
 
         InvoiceFileTransaction invoiceFileTransaction = new InvoiceFileTransaction();
         invoiceFileTransaction.setPk(PARTITION_KEY);
-        invoiceFileTransaction.setSk(key);
+        invoiceFileTransaction.setSk(transactionId);
         invoiceFileTransaction.setTtl(ttl);
         invoiceFileTransaction.setRequestId(requestId);
         invoiceFileTransaction.setCreatedAt(timestamp);
@@ -40,5 +42,21 @@ public class InvoiceFileTransactionsRepository {
         invoiceFileTransaction.setFileTransactionStatus(InvoiceFileTransactionStatus.GENERATED);
 
         return invoiceFileTransactionTable.putItem(invoiceFileTransaction);
+    }
+
+    public CompletableFuture<InvoiceFileTransaction> updateInvoiceFileTransactionStatus(
+            String transactionId, InvoiceFileTransactionStatus status) {
+        InvoiceFileTransaction invoiceFileTransaction = new InvoiceFileTransaction();
+        invoiceFileTransaction.setPk(PARTITION_KEY);
+        invoiceFileTransaction.setSk(transactionId);
+        invoiceFileTransaction.setFileTransactionStatus(status);
+
+        return invoiceFileTransactionTable.updateItem(UpdateItemEnhancedRequest.builder(InvoiceFileTransaction.class)
+                .item(invoiceFileTransaction)
+                .ignoreNulls(true)
+                .conditionExpression(Expression.builder()
+                        .expression("attribute_exists(sk)")
+                        .build())
+                .build());
     }
 }
