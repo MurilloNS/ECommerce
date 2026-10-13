@@ -1,13 +1,21 @@
 package br.com.murillo.invoicesservice.invoices.controllers;
 
+import br.com.murillo.invoicesservice.invoices.dtos.UrlResponseDTO;
 import br.com.murillo.invoicesservice.invoices.repositories.InvoiceFileTransactionsRepository;
 import br.com.murillo.invoicesservice.invoices.services.S3InvoicesService;
 import com.amazonaws.xray.spring.aop.XRayEnabled;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.UUID;
 
 @XRayEnabled
 @RestController
@@ -18,8 +26,25 @@ public class InvoiceController {
     private final InvoiceFileTransactionsRepository invoiceFileTransactionsRepository;
 
     @Autowired
-    public InvoiceController(S3InvoicesService s3InvoicesService, InvoiceFileTransactionsRepository invoiceFileTransactionsRepository) {
+    public InvoiceController(S3InvoicesService s3InvoicesService,
+                             InvoiceFileTransactionsRepository invoiceFileTransactionsRepository) {
         this.s3InvoicesService = s3InvoicesService;
         this.invoiceFileTransactionsRepository = invoiceFileTransactionsRepository;
+    }
+
+    @PostMapping
+    public ResponseEntity<UrlResponseDTO> generatePreSignedUrl(@RequestHeader("requestId") String requestId) {
+        String key = UUID.randomUUID().toString();
+        int expiresIn = 300;
+
+        ThreadContext.put("invoiceFileTransactionId", key);
+
+        String preSignedUrl = s3InvoicesService.generatePreSignedUrl(key, expiresIn);
+
+        invoiceFileTransactionsRepository.createInvoiceFileTransaction(key, requestId, expiresIn).join();
+
+        LOG.info("Invoice file transaction generated...");
+
+        return new ResponseEntity<>(new UrlResponseDTO(preSignedUrl, expiresIn, key), HttpStatus.OK);
     }
 }

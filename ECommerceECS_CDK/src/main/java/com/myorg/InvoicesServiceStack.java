@@ -119,7 +119,7 @@ public class InvoicesServiceStack extends Stack {
 
         fargateTaskDefinition.addContainer("InvoicesServiceContainer",
                 ContainerDefinitionOptions.builder()
-                        .image(ContainerImage.fromEcrRepository(invoicesServiceProps.repository(), "1.0.0"))
+                        .image(ContainerImage.fromEcrRepository(invoicesServiceProps.repository(), "1.1.0"))
                         .containerName("invoicesService")
                         .logging(logDriver)
                         .portMappings(Collections.singletonList(PortMapping.builder()
