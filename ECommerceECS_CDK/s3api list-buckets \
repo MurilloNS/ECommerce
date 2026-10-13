@@ -1,0 +1,15 @@
+------------------------------------------------------------------------------------------------------------------------------------------------
+|                                                              ListStackResources                                                              |
++-----------------------------------+------------------------+--------------------------------------------------------------+------------------+
+|  [1m[34mCdkBootstrapVersion[0m              |  [1m[34mAWS::SSM::Parameter[0m   |  [1m[34m/cdk-bootstrap/hnb659fds/version[0m                            |  [1m[34mCREATE_COMPLETE[0m |
+|  [1m[34mCloudFormationExecutionRole[0m      |  [1m[34mAWS::IAM::Role[0m        |  [1m[34mcdk-hnb659fds-cfn-exec-role-522565516459-us-east-1[0m          |  [1m[34mCREATE_COMPLETE[0m |
+|  [1m[34mContainerAssetsRepository[0m        |  [1m[34mAWS::ECR::Repository[0m  |  [1m[34mcdk-hnb659fds-container-assets-522565516459-us-east-1[0m       |  [1m[34mCREATE_COMPLETE[0m |
+|  [1m[34mDeploymentActionRole[0m             |  [1m[34mAWS::IAM::Role[0m        |  [1m[34mcdk-hnb659fds-deploy-role-522565516459-us-east-1[0m            |  [1m[34mCREATE_COMPLETE[0m |
+|  [1m[34mFilePublishingRole[0m               |  [1m[34mAWS::IAM::Role[0m        |  [1m[34mcdk-hnb659fds-file-publishing-role-522565516459-us-east-1[0m   |  [1m[34mCREATE_COMPLETE[0m |
+|  [1m[34mFilePublishingRoleDefaultPolicy[0m  |  [1m[34mAWS::IAM::Policy[0m      |  [1m[34mCDKTo-FileP-oxr7rV0IG7ol[0m                                    |  [1m[34mCREATE_COMPLETE[0m |
+|  [1m[34mImagePublishingRole[0m              |  [1m[34mAWS::IAM::Role[0m        |  [1m[34mcdk-hnb659fds-image-publishing-role-522565516459-us-east-1[0m  |  [1m[34mCREATE_COMPLETE[0m |
+|  [1m[34mImagePublishingRoleDefaultPolicy[0m |  [1m[34mAWS::IAM::Policy[0m      |  [1m[34mCDKTo-Image-wN7ZsbWA7dDV[0m                                    |  [1m[34mCREATE_COMPLETE[0m |
+|  [1m[34mLookupRole[0m                       |  [1m[34mAWS::IAM::Role[0m        |  [1m[34mcdk-hnb659fds-lookup-role-522565516459-us-east-1[0m            |  [1m[34mCREATE_COMPLETE[0m |
+|  [1m[34mStagingBucket[0m                    |  [1m[34mAWS::S3::Bucket[0m       |  [1m[34mcdk-hnb659fds-assets-522565516459-us-east-1[0m                 |  [1m[34mCREATE_COMPLETE[0m |
+|  [1m[34mStagingBucketPolicy[0m              |  [1m[34mAWS::S3::BucketPolicy[0m |  [1m[34mcdk-hnb659fds-assets-522565516459-us-east-1[0m                 |  [1m[34mCREATE_COMPLETE[0m |
++-----------------------------------+------------------------+--------------------------------------------------------------+------------------+
