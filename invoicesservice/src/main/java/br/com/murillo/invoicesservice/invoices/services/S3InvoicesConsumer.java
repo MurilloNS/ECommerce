@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.sqs.SqsAsyncClient;
+import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
+import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 
 @Service
@@ -35,5 +37,14 @@ public class S3InvoicesConsumer {
                 .maxNumberOfMessages(5)
                 .queueUrl(invoiceEventsQueueUrl)
                 .build();
+    }
+
+    private void deleteMessage(Message message) {
+        sqsAsyncClient.deleteMessage(DeleteMessageRequest.builder()
+                .queueUrl(invoiceEventsQueueUrl)
+                .receiptHandle(message.receiptHandle())
+                .build()).join();
+
+        LOG.info("Messages deleted...");
     }
 }
