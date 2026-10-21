@@ -1,6 +1,6 @@
 package br.com.murillo.invoicesservice.invoices.models;
 
-import br.com.murillo.invoicesservice.invoices.enums.InvoiceFileTransactionStatus;
+import br.com.murillo.invoicesservice.invoices.enums.InvoiceTransactionStatus;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
@@ -13,7 +13,7 @@ public class InvoiceTransaction {
     private Long createdAt;
     private String customerEmail;
     private String invoiceNumber;
-    private InvoiceFileTransactionStatus transactionStatus;
+    private InvoiceTransactionStatus transactionStatus;
 
     @DynamoDbPartitionKey
     public String getPk() {
@@ -65,11 +65,11 @@ public class InvoiceTransaction {
         this.invoiceNumber = invoiceNumber;
     }
 
-    public InvoiceFileTransactionStatus getTransactionStatus() {
+    public InvoiceTransactionStatus getTransactionStatus() {
         return transactionStatus;
     }
 
-    public void setTransactionStatus(InvoiceFileTransactionStatus transactionStatus) {
+    public void setTransactionStatus(InvoiceTransactionStatus transactionStatus) {
         this.transactionStatus = transactionStatus;
     }
 }
