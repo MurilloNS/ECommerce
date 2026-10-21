@@ -1,0 +1,75 @@
+package br.com.murillo.invoicesservice.invoices.models;
+
+import br.com.murillo.invoicesservice.invoices.enums.InvoiceFileTransactionStatus;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
+
+@DynamoDbBean
+public class InvoiceTransaction {
+    private String pk;
+    private String sk;
+    private Long ttl;
+    private Long createdAt;
+    private String customerEmail;
+    private String invoiceNumber;
+    private InvoiceFileTransactionStatus transactionStatus;
+
+    @DynamoDbPartitionKey
+    public String getPk() {
+        return pk;
+    }
+
+    @DynamoDbSortKey
+    public String getSk() {
+        return sk;
+    }
+
+    public void setPk(String pk) {
+        this.pk = pk;
+    }
+
+    public void setSk(String sk) {
+        this.sk = sk;
+    }
+
+    public Long getTtl() {
+        return ttl;
+    }
+
+    public void setTtl(Long ttl) {
+        this.ttl = ttl;
+    }
+
+    public Long getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Long createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public String getCustomerEmail() {
+        return customerEmail;
+    }
+
+    public void setCustomerEmail(String customerEmail) {
+        this.customerEmail = customerEmail;
+    }
+
+    public String getInvoiceNumber() {
+        return invoiceNumber;
+    }
+
+    public void setInvoiceNumber(String invoiceNumber) {
+        this.invoiceNumber = invoiceNumber;
+    }
+
+    public InvoiceFileTransactionStatus getTransactionStatus() {
+        return transactionStatus;
+    }
+
+    public void setTransactionStatus(InvoiceFileTransactionStatus transactionStatus) {
+        this.transactionStatus = transactionStatus;
+    }
+}
