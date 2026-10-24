@@ -1,8 +1,9 @@
 package br.com.murillo.invoicesservice.invoices.services;
 
-import br.com.murillo.invoicesservice.invoices.enums.InvoiceFileTransactionStatus;
 import br.com.murillo.invoicesservice.invoices.models.InvoiceFileTransaction;
 import br.com.murillo.invoicesservice.invoices.repositories.InvoiceFileTransactionsRepository;
+import br.com.murillo.invoicesservice.invoices.repositories.InvoiceRepository;
+import br.com.murillo.invoicesservice.invoices.repositories.InvoiceTransactionRepository;
 import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification;
 import com.amazonaws.services.lambda.runtime.serialization.PojoSerializer;
 import com.amazonaws.services.lambda.runtime.serialization.events.LambdaEventSerializers;
@@ -41,6 +42,8 @@ public class S3InvoicesConsumer {
     private static final Logger LOG = LogManager.getLogger(S3InvoicesConsumer.class);
     private final S3AsyncClient s3AsyncClient;
     private final InvoiceFileTransactionsRepository invoiceFileTransactionsRepository;
+    private final InvoiceTransactionRepository invoiceTransactionRepository;
+    private final InvoiceRepository invoiceRepository;
     private final ObjectMapper objectMapper;
     private final SqsAsyncClient sqsAsyncClient;
     private final String invoiceEventsQueueUrl;
@@ -49,10 +52,14 @@ public class S3InvoicesConsumer {
     @Autowired
     public S3InvoicesConsumer(S3AsyncClient s3AsyncClient,
                               InvoiceFileTransactionsRepository invoiceFileTransactionsRepository,
+                              InvoiceTransactionRepository invoiceTransactionRepository,
+                              InvoiceRepository invoiceRepository,
                               ObjectMapper objectMapper, SqsAsyncClient sqsAsyncClient,
                               @Value("${aws.sqs.queue.invoices.events.url}") String invoiceEventsQueueUrl) {
         this.s3AsyncClient = s3AsyncClient;
         this.invoiceFileTransactionsRepository = invoiceFileTransactionsRepository;
+        this.invoiceTransactionRepository = invoiceTransactionRepository;
+        this.invoiceRepository = invoiceRepository;
         this.objectMapper = objectMapper;
         this.sqsAsyncClient = sqsAsyncClient;
         this.invoiceEventsQueueUrl = invoiceEventsQueueUrl;
