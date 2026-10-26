@@ -1,6 +1,8 @@
 package br.com.murillo.invoicesservice.invoices.controllers;
 
+import br.com.murillo.invoicesservice.invoices.dtos.InvoiceFileTransactionApiDTO;
 import br.com.murillo.invoicesservice.invoices.dtos.UrlResponseDTO;
+import br.com.murillo.invoicesservice.invoices.models.InvoiceFileTransaction;
 import br.com.murillo.invoicesservice.invoices.repositories.InvoiceFileTransactionsRepository;
 import br.com.murillo.invoicesservice.invoices.services.S3InvoicesService;
 import com.amazonaws.xray.spring.aop.XRayEnabled;
@@ -10,10 +12,7 @@ import org.apache.logging.log4j.ThreadContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
@@ -46,5 +45,18 @@ public class InvoiceController {
         LOG.info("Invoice file transaction generated...");
 
         return new ResponseEntity<>(new UrlResponseDTO(preSignedUrl, expiresIn, key), HttpStatus.OK);
+    }
+
+    @GetMapping("/transactions/{fileTransactionId}")
+    public ResponseEntity<?> getInvoiceFileTransaction(@PathVariable String fileTransactionId) {
+        LOG.info("Get invoice file transaction by its id: {}", fileTransactionId);
+        InvoiceFileTransaction invoiceFileTransaction = invoiceFileTransactionsRepository
+                .getInvoiceFileTransaction(fileTransactionId).join();
+        if (invoiceFileTransaction != null) {
+            return new ResponseEntity<>(new InvoiceFileTransactionApiDTO(
+                    fileTransactionId, invoiceFileTransaction.getFileTransactionStatus().name()), HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>("Invoice file transaction not found", HttpStatus.NOT_FOUND);
+        }
     }
 }
