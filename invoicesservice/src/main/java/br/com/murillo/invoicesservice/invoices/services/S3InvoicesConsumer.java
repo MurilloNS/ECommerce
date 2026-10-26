@@ -1,5 +1,7 @@
 package br.com.murillo.invoicesservice.invoices.services;
 
+import br.com.murillo.invoicesservice.invoices.dtos.InvoiceFileDTO;
+import br.com.murillo.invoicesservice.invoices.enums.InvoiceTransactionStatus;
 import br.com.murillo.invoicesservice.invoices.models.InvoiceFileTransaction;
 import br.com.murillo.invoicesservice.invoices.repositories.InvoiceFileTransactionsRepository;
 import br.com.murillo.invoicesservice.invoices.repositories.InvoiceRepository;
@@ -7,6 +9,7 @@ import br.com.murillo.invoicesservice.invoices.repositories.InvoiceTransactionRe
 import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification;
 import com.amazonaws.services.lambda.runtime.serialization.PojoSerializer;
 import com.amazonaws.services.lambda.runtime.serialization.events.LambdaEventSerializers;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,6 +35,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -149,8 +153,7 @@ public class S3InvoicesConsumer {
             // Process each invoice from the file (also update the invoice transaction status)
             String line;
             while((line = reader.readLine()) != null) {
-                // TODO - process the invoice
-
+                processInvoice(line, invoiceFileTransaction).join();
                 LOG.info("Invoice processed...");
                 invoiceCount++;
             }
@@ -177,6 +180,33 @@ public class S3InvoicesConsumer {
         }
 
         LOG.info("Number of invoices processed: {}", invoiceCount);
+
+        return CompletableFuture.supplyAsync(() -> true);
+    }
+
+    private CompletableFuture<Boolean> processInvoice(String line, InvoiceFileTransaction invoiceFileTransaction)
+        throws JsonProcessingException {
+        InvoiceTransactionStatus invoiceTransactionStatus;
+        String invoiceFileTransactionId = invoiceFileTransaction.getSk();
+        LOG.info("Persisting the invoice...");
+
+        String invoiceTransactionId = UUID.randomUUID().toString();
+        InvoiceFileDTO invoiceFileDTO = objectMapper.readValue(line, InvoiceFileDTO.class);
+        if (invoiceFileDTO.products().size() == 0) {
+            LOG.error("Invoice import failed - empty products list");
+            invoiceTransactionStatus = InvoiceTransactionStatus.EMPTY_PRODUCTS_LIST;
+        } else {
+            invoiceTransactionStatus = InvoiceTransactionStatus.OK;
+        }
+
+        CompletableFuture<Void> createInvoiceFuture = invoiceRepository
+                .createInvoice(invoiceFileDTO, invoiceTransactionId, invoiceFileTransactionId);
+        CompletableFuture<Void> createInvoiceTransactionFuture = invoiceTransactionRepository
+                .createInvoiceTransaction(invoiceFileDTO.customerEmail(), invoiceFileDTO.invoiceNumber(),
+                        invoiceTransactionId, invoiceFileTransactionId, invoiceTransactionStatus);
+
+        CompletableFuture.allOf(createInvoiceFuture, createInvoiceTransactionFuture).join();
+        LOG.info("Invoice persisted");
 
         return CompletableFuture.supplyAsync(() -> true);
     }

@@ -10,7 +10,6 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 
 import java.time.Instant;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @Repository
@@ -28,12 +27,11 @@ public class InvoiceTransactionRepository {
     }
 
     public CompletableFuture<Void> createInvoiceTransaction(
-            String customerEmail, String invoiceNumber, String invoiceFileTransactionId,
+            String customerEmail, String invoiceNumber, String invoiceTransactionId, String invoiceFileTransactionId,
             InvoiceTransactionStatus invoiceTransactionStatus) {
 
         long timestamp = Instant.now().toEpochMilli();
         long ttl = Instant.now().plusSeconds(300).getEpochSecond();
-        String invoiceTransactionId = UUID.randomUUID().toString();
 
         InvoiceTransaction invoiceTransaction = new InvoiceTransaction();
         invoiceTransaction.setPk(PARTITION_KEY.concat(invoiceFileTransactionId));
