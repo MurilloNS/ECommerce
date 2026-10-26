@@ -50,6 +50,7 @@ public class InvoiceController {
     @GetMapping("/transactions/{fileTransactionId}")
     public ResponseEntity<?> getInvoiceFileTransaction(@PathVariable String fileTransactionId) {
         LOG.info("Get invoice file transaction by its id: {}", fileTransactionId);
+
         InvoiceFileTransaction invoiceFileTransaction = invoiceFileTransactionsRepository
                 .getInvoiceFileTransaction(fileTransactionId).join();
         if (invoiceFileTransaction != null) {
