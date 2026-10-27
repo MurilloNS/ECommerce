@@ -5,6 +5,7 @@ import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.applicationautoscaling.EnableScalingProps;
+import software.amazon.awscdk.services.cloudwatch.*;
 import software.amazon.awscdk.services.dynamodb.*;
 import software.amazon.awscdk.services.ec2.Peer;
 import software.amazon.awscdk.services.ec2.Port;
@@ -51,6 +52,24 @@ public class AuditServiceStack extends Stack {
                 .billingMode(BillingMode.PROVISIONED)
                 .readCapacity(1)
                 .writeCapacity(1)
+                .build());
+
+        // Metric
+        Metric writeThrottleEvents = eventsDdb.metric("writeThrottleEvents", MetricOptions.builder()
+                .period(Duration.minutes(2))
+                .statistic("SampleCount")
+                .unit(Unit.COUNT)
+                .build());
+
+        // Alarm
+        writeThrottleEvents.createAlarm(this, "writeThrottleEvents", CreateAlarmOptions.builder()
+                .alarmName("writeThrottleEvents")
+                .alarmDescription("Write throttled events alarm in events DDB")
+                .actionsEnabled(false)
+                .evaluationPeriods(1)
+                .threshold(15)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
                 .build());
 
         Queue productEventsDlq = new Queue(this, "ProductEventsDlq", QueueProps.builder()
