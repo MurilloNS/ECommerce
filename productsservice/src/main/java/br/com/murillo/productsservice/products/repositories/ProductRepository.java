@@ -74,6 +74,7 @@ public class ProductRepository {
     public CompletableFuture<Void> create(Product product) throws ProductException {
         Product productWithSameCode = checkIfCodeExists(product.getCode()).join();
         if (productWithSameCode != null) {
+            LOG.error("Can not create a product with same code.");
             throw new ProductException(ProductErrors.PRODUCT_CODE_ALREADY_EXISTS, productWithSameCode.getId());
         }
 
